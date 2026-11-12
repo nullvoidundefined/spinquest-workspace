@@ -1,0 +1,9 @@
+# Each of these is its own git repo; this workspace repo tracks only the harness and docs.
+/Backend/
+/central-tech/
+/claude-skills/
+/spinquest-frontend/
+/spinquest-mobile-app/
+/spinquest-rips-frontend/
+.DS_Store
+.claude/settings.local.json
