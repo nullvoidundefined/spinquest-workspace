@@ -1,0 +1,1 @@
+{"hook_event_name":"PreToolUse","tool_name":"MultiEdit","tool_input":{"file_path":"__WS__/spinquest-rips-frontend/src/features/orders/load.ts","edits":[{"old_string":"a","new_string":"const a = 1"},{"old_string":"b","new_string":"await fetch(url)"}]},"cwd":"__WS__/Backend"}

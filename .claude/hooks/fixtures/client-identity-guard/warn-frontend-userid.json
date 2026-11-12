@@ -1,0 +1,1 @@
+{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"__WS__/spinquest-frontend/src/services/orders.ts","content":"const q = '/orders?userId=' + id"},"cwd":"__WS__/Backend"}

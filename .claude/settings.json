@@ -1,0 +1,75 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Grep|Glob|Edit|Write|MultiEdit|Bash",
+        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/credential-files-guard.sh" }]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/cross-repo-import-guard.sh" },
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/rips-boundary-guard.sh" },
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/client-identity-guard.sh" }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/hook-bypass-guard.sh" }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/style-scan.sh" },
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/contract-parity-reminder.sh" },
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/citation-check.sh" },
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/review-norms-check.sh" }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/workspace-status.sh" }]
+      }
+    ]
+  },
+  "permissions": {
+    "ask": [
+      "Bash(eas update:*)",
+      "Bash(eas submit:*)",
+      "Bash(eas build:*)",
+      "Bash(fastlane:*)",
+      "Bash(gh workflow run:*)",
+      "Bash(kubectl:*)",
+      "Bash(argocd:*)",
+      "Bash(helm:*)",
+      "Bash(pnpm db:migrate:*)",
+      "Bash(pnpm db:revert:*)",
+      "Bash(pnpm update:*)",
+      "Bash(pnpm submit:*)",
+      "Bash(pnpm release:*)",
+      "Bash(pnpm build:prod:*)",
+      "Bash(pnpm build:staging:*)",
+      "Bash(pnpm build:preview:*)",
+      "Bash(pnpm build:testflight:*)",
+      "Bash(pnpm rebuild:*)",
+      "Bash(pnpm fastlane:*)",
+      "Bash(bundle exec fastlane:*)",
+      "Bash(npx eas:*)",
+      "Bash(pnpm exec eas:*)",
+      "Bash(pnpm typeorm migration:*)"
+    ]
+  },
+  "extraKnownMarketplaces": {
+    "spinquest": { "source": { "source": "github", "repo": "BetsphereORG/claude-skills" } },
+    "central-tech": { "source": { "source": "github", "repo": "BetsphereORG/central-tech" } }
+  },
+  "enabledPlugins": {
+    "spinquest-style@spinquest": true,
+    "review-crew@spinquest": true,
+    "dependabot-review@spinquest": true,
+    "central-conventions@central-tech": true
+  }
+}

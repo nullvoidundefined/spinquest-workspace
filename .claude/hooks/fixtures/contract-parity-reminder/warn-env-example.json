@@ -1,0 +1,1 @@
+{"hook_event_name":"PostToolUse","tool_name":"Edit","cwd":"__WS__/Backend","tool_input":{"file_path":"__WS__/Backend/.env.example","content":"x"}}

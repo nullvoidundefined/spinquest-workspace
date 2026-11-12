@@ -1,0 +1,9 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "backend-api", "runtimeExecutable": "pnpm", "runtimeArgs": ["-C", "Backend", "start"], "port": 3000 },
+    { "name": "spinquest-frontend", "runtimeExecutable": "corepack", "runtimeArgs": ["pnpm", "-C", "spinquest-frontend", "dev:casino"], "port": 3001 },
+    { "name": "rips-frontend", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "spinquest-rips-frontend", "run", "dev"], "port": 5173 },
+    { "name": "mobile-metro", "runtimeExecutable": "pnpm", "runtimeArgs": ["-C", "spinquest-mobile-app", "start"], "port": 8081 }
+  ]
+}

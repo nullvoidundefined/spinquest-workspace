@@ -1,0 +1,1 @@
+{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"__WS__/personal-docs/dossier.md","content":"```ts\nimport x from '../../x'\n```"},"cwd":"__WS__/Backend"}

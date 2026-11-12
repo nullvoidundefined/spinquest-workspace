@@ -1,0 +1,1 @@
+{"hook_event_name":"PostToolUse","tool_name":"Edit","cwd":"__WS__/Backend","tool_input":{"file_path":"__WS__/spinquest-frontend/public/locales/en.json","old_string":"x","new_string":"\"k\": \"v\""}}

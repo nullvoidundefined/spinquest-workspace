@@ -1,0 +1,1 @@
+{"hook_event_name":"PostToolUse","tool_name":"Edit","cwd":"__WS__/Backend","tool_input":{"file_path":"__WS__/.claude/hooks/fixtures/citation-check/personal-docs/bad.md","new_string":"x"}}

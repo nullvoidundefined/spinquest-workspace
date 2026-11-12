@@ -1,0 +1,1 @@
+{"hook_event_name":"PostToolUse","tool_name":"Write","cwd":"__WS__/Backend","tool_input":{"file_path":"__WS__/spinquest-frontend/src/config.ts","content":"const a = import.meta.env.VITE_APP_NEW_THING;"}}

@@ -1,0 +1,1 @@
+{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"__WS__/spinquest-rips-frontend/src/config/env.ts","content":"export const u = import.meta.env.VITE_X"},"cwd":"__WS__/Backend"}

@@ -278,7 +278,7 @@ Blocking hooks exit 2 with a one-line reason naming the rule. Advisory hooks pri
 
 | Script | Matcher | Blocks |
 |---|---|---|
-| `credential-files-guard.sh` | Read, Edit, Write, Bash | Any reference to `spinquest-service-account.json`, `google-play-upload-key.json`, `google-services.json`, `GoogleService-Info.plist`, in any repo |
+| `credential-files-guard.sh` | Read, Grep, Glob, Edit, Write, Bash | Any reference to `spinquest-service-account.json`, `google-play-upload-key.json`, `google-services.json`, `GoogleService-Info.plist`, in any repo |
 | `cross-repo-import-guard.sh` | Edit, Write | New content with an import specifier that resolves outside the file's own repo root |
 | `rips-boundary-guard.sh` | Edit, Write under `spinquest-rips-frontend/` | `fetch(` outside `packages/rips-core/**/api/client.ts`, `src/features/auth/client.ts`, `src/features/debug/**`; `import.meta.env` outside `src/config/env.ts`; `@config/session` import outside `src/start.tsx` and `src/features/dev/**`; `document`/`window`/`localStorage` inside `packages/rips-core/**` |
 | `client-identity-guard.sh` | Edit, Write in client repos | A `userId` key added in new content of an API module: blocks in rips, advisory in spinquest-frontend and mobile (existing `lib/api` code uses `userId`) |
@@ -291,7 +291,12 @@ block unrelated edits.
 
 `Bash(eas update:*)`, `Bash(eas submit:*)`, `Bash(eas build:*)`, `Bash(fastlane:*)`,
 `Bash(gh workflow run:*)`, `Bash(kubectl:*)`, `Bash(argocd:*)`, `Bash(helm:*)`,
-`Bash(pnpm db:migrate:*)`, `Bash(pnpm db:revert:*)`.
+`Bash(pnpm db:migrate:*)`, `Bash(pnpm db:revert:*)`, `Bash(pnpm update:*)`, `Bash(pnpm submit:*)`,
+`Bash(pnpm release:*)`, `Bash(pnpm build:prod:*)`, `Bash(pnpm build:staging:*)`,
+`Bash(pnpm build:preview:*)`, `Bash(pnpm build:testflight:*)`, `Bash(pnpm rebuild:*)`,
+`Bash(pnpm fastlane:*)`, `Bash(bundle exec fastlane:*)`, `Bash(npx eas:*)`, `Bash(pnpm exec eas:*)`,
+`Bash(pnpm typeorm migration:*)`. These cover the repos' wrapper scripts; a bare `pnpm build:*` is
+not listed because local web builds are safe.
 
 ### Advisory
 
@@ -395,6 +400,8 @@ stack; keep both outputs as evidence.
 
 - Rules files for Backend and spinquest-frontend are distilled, not owned by those repos; they
   drift. Each carries a "distilled on <date> from <sources>" line.
+- A Grep over a whole directory can still surface credential contents; the credential guard covers
+  named paths and file globs only.
 - Regex guards miss creative forms (`globalThis.fetch`, aliased imports). They catch the common
   case; review-crew catches the rest.
 - `style-scan` adds latency to every TS edit; it is advisory and scoped to the edited file.

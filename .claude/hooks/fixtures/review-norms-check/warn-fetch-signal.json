@@ -1,0 +1,1 @@
+{"hook_event_name":"PostToolUse","tool_name":"Write","cwd":"__WS__/Backend","tool_input":{"file_path":"__WS__/central-tech/probe/ping.mjs","content":"await fetch(url);"}}

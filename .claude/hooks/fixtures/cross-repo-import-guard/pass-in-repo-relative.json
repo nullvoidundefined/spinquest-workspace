@@ -1,0 +1,1 @@
+{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"__WS__/spinquest-frontend/src/features/a.ts","content":"import y from '../lib/y'"},"cwd":"__WS__/Backend"}

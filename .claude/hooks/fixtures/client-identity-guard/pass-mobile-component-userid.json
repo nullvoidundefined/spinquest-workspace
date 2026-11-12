@@ -1,0 +1,1 @@
+{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"__WS__/spinquest-mobile-app/src/features/x/components/y.tsx","content":"const p = { userId: id }"},"cwd":"__WS__/Backend"}

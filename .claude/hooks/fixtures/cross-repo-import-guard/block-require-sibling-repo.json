@@ -1,0 +1,1 @@
+{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"__WS__/spinquest-frontend/src/a.ts","content":"const c = require('../../spinquest-rips-frontend/packages/rips-core')"},"cwd":"__WS__/Backend"}

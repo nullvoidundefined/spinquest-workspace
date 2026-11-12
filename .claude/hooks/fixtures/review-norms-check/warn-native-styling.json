@@ -1,0 +1,1 @@
+{"hook_event_name":"PostToolUse","tool_name":"Write","cwd":"__WS__/Backend","tool_input":{"file_path":"__WS__/spinquest-mobile-app/src/Card.tsx","content":"const s = StyleSheet.create({ a: { color: \"#ff00aa\" } });"}}
