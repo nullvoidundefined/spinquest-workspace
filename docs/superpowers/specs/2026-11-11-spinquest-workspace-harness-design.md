@@ -33,6 +33,8 @@ here), per-repo `CLAUDE.md` files inside the six repos, Linear/ticket workflows.
 | verify ladder | A repo's ordered verification steps: lint, typecheck, test, build, real path, failure path |
 | team verdict | What central-tech `TODO.md`, `parity/` or `reference/` already decided |
 | aspirational | A rule the repo's current code does not yet follow; tagged `(aspirational)` in rules files |
+| provenance line | One line per rules file naming the review date range and repo docs its rules were derived from |
+| review norm | A rule derived from PR review data (G, C, S or repo-specific) |
 
 ## Layout
 
@@ -47,7 +49,7 @@ spinquest/
     ├── rules/                    # path-scoped, one per repo + personal-docs
     ├── hooks/                    # guard and advisory scripts, run/ helpers, fixtures/, test-hooks.sh
     ├── agents/repo-tracer.md
-    └── skills/{trace-feature,spinquest-change,local-stack}/SKILL.md
+    └── skills/{trace-feature,spinquest-change,local-stack,mine-reviews}/SKILL.md
 ```
 
 Versioning: `git init` at `spinquest/`, local only, no remote. Tracked: `CLAUDE.md`, `.claude/`,
@@ -56,7 +58,7 @@ directories and `.DS_Store`.
 
 ## Root CLAUDE.md
 
-Target size about 3KB. Sections:
+Target size under about 5KB. Sections:
 
 1. **Repo table.** Each repo: what it is, stack, package manager, verify commands, where its own
    agent doc lives (`central-tech/AGENTS.md`, `spinquest-rips-frontend/AGENTS.md`,
@@ -73,14 +75,119 @@ Target size about 3KB. Sections:
    7. One capability, one place; link instead of retelling.
    8. An agent review runs in a fresh session, never the session that wrote the code.
    9. Each repo is its own git repo: commit inside it, no imports across repo roots.
+4. **Review-derived global rules** (G1 to G12, see "Review-derived rules").
+
+## Review-derived rules
+
+Source: GitHub PR review data for the five code repos (`claude-skills` too small to count),
+2026-05-11 to 2026-11-11: about 950 human reviewer comments on others' PRs and about 2,450 bot
+findings paired with the author's reply (a reasoned rejection is a preference; a fix is
+endorsement). Rules carry no per-rule PR citations. Each file carries one provenance line:
+`Derived from PR reviews 2026-05-11 to 2026-11-11[, plus <repo doc>].`
+
+Classification: **global** when raised in 3+ repos, or in at least one server and one client
+repo; **clients** when only in client repos; **services** when only in Backend and central-tech;
+otherwise **repo-specific**.
+
+### Global (root `CLAUDE.md`)
+
+- G1. A new test fails when the code it guards is broken: revert or mutate the fix to prove it.
+  Never derive the expected value from the response under test. Tests ship in the same PR.
+- G2. Never swallow an error: log with context, rethrow known errors, `return await`. Only
+  best-effort side effects (push, analytics, Intercom) warn and continue.
+- G3. Branch on `code` / `errorType`, never on message text or bare HTTP status. A retryable or
+  ambiguous failure (network, 408, 5xx, malformed 2xx) is never treated as definitive. Only the
+  exact success signal is success.
+- G4. A change that alters a fact updates every copy in the same PR: comments, README and
+  CONSUMER docs, `.env.example`, Docker and CI references, the PR body. Grep for stale siblings.
+- G5. Reuse existing helpers and constants before adding new ones; name magic numbers.
+- G6. Delete dead code, commented-out code and comments that restate the code. Comments never
+  narrate history. Product TODOs go to Linear; only technical TODOs stay in code.
+- G7. Tokens, OTPs, card and bank numbers and PII stay out of logs, telemetry, URLs, debug tapes
+  and caches.
+- G8. A repeated action is a no-op. An idempotency key survives an ambiguous failure and retires
+  only on a definite answer. Conflicting controls are disabled while a write is in flight.
+- G9. A pre-existing or out-of-scope defect gets a ticket or a TODO row, not a wider PR. Clean up
+  only lines the PR already touches.
+- G10. Before acting on a reviewer bot's claim about a library, the database or the backend
+  contract, verify it against source or by running it.
+- G11. Validate untrusted input strictly: `Object.hasOwn` for keyed lookups, record guards reject
+  arrays and null, reject `''` and whitespace before `Number()`.
+- G12. Fail closed: flags default off, auth audiences and route permissions are allow-lists,
+  stubs refuse in production.
+
+### Clients (`rules/clients.md`, paths: the three client repos)
+
+- C1. Every user-facing string, accessibility labels included, goes through i18n, with the key in
+  every locale file.
+- C2. Check layouts at 320 and 375px, with the longest locale and large system text.
+- C3. A failed read never renders as an empty or default state: show the error with Retry and
+  block the actions that depend on it.
+- C4. Per-user state is scoped to the user and cleared on logout; async results landing after the
+  user changes are dropped.
+- C5. Async results get `role="status"` or `role="alert"`; modals take, trap and restore focus;
+  an ARIA role comes with its keyboard behaviour. Accessibility wins over a Figma detail; flag the
+  divergence to design.
+- C6. A fix to shared behaviour lands on web and native together; copy matches across them.
+
+### Services (`rules/services.md`, paths: `Backend/**`, `central-tech/**`)
+
+- S1. Configuration fails fast at boot; no silent default for a risky value. A tunable is a
+  constant when changing it needs a build anyway or a wrong value is dangerous, otherwise an env
+  var with a default. A bypass gets a single-purpose `DANGEROUS_*` flag, never another reading of
+  `LOCAL_ENV` or `NODE_ENV`.
+- S2. Every outbound `fetch` has a timeout signal.
+- S3. Consistency with the repo's existing idiom beats a one-off improvement.
+
+### Repo-specific (added to each repo's rules file under "Hard rules" or "Review norms")
+
+- **Backend:** atomic flows write only through the transaction's queryRunner/EntityManager, never
+  a global repository (aspirational: common today, deadlocks the 3-connection PR-env pool);
+  notifications, email and socket pushes send after commit; `down()` fully reverts, an applied
+  migration is never edited, filenames are kebab-case; `innerJoin` over `innerJoinAndSelect` when
+  the join is not read, `getExists()` over `getOne()`; `withDeleted` is a deliberate choice, and
+  gameplay and payout paths exclude banned users; `req.path`, never `req.url`, in middleware;
+  specific error types, no internal text leaked to clients; `LoggerInterface` and `warnOnce`,
+  never `console`; PRDs and design notes live in Notion or Linear; skip race hardening for
+  millisecond windows unless the fix is one index or `WHERE` clause.
+- **central-tech:** no volatile counts in prose; tense matches state, no heading pinned to a PR
+  number; bump the `verified on` header when adding a newer fact; read untrusted input once and
+  work from the snapshot; consume async callbacks (`=> void` does not stop a promise); byte
+  budgets in bytes, not `.length`; README snippets compile; a new compose service joins the CI
+  failure-log loop; respect `engines.node`; qualify cross-repo PR refs (`auth-service#220`);
+  "RIPS" in prose; no major changesets before launch; port Backend as is.
+- **spinquest-frontend:** a new `VITE_APP_*` var is wired through the Dockerfile, compose,
+  `build.yaml` and `deploy.yaml`; sensitive inputs carry `sentry-block ph-no-capture`;
+  product-specific code is lazy-loaded; PRs stay near 300 lines with screenshots; Lottie JSON is
+  committed minified.
+- **spinquest-mobile-app:** navigate through `navigateToLobby` and `dismissTo`, never a duplicate
+  tab stack; check `appGuardType === null` before opening any modal; style with NativeWind
+  `className` and theme colours only, no hex, no `StyleSheet`, `Text` from `@/components/ui`;
+  shared mocks in `vitest.setup.ts`; effects return cleanup and null timer refs; analytics in
+  dollars, no double counting.
+- **spinquest-rips-frontend:** the debug tape redacts response bodies; mutations carrying secrets
+  or PII set `gcTime: 0`; root and `apps/rips-native-preview` lockfiles bump together with the
+  peer range. The rest is already in its `AGENTS.md`.
+
+### Resolved reviewer disagreements
+
+| Disagreement | Default in the rules |
+|---|---|
+| Fix adjacent bugs vs stay in scope | Stay in scope (G9); clean only touched lines |
+| Tests in the same PR vs follow-up | Same PR (G1); deferral needs the reviewer's agreement |
+| Env var vs constant | S1 split: constant when a build is needed anyway or a wrong value is dangerous |
+| Global repository inside a transaction | Transaction manager only (aspirational) |
+| Figma focus-ring removal vs accessibility | Accessibility wins (C5); flag to design |
 
 ## Path-scoped rules
 
 `.claude/rules/<name>.md`, each with `paths:` frontmatter, 1 to 3KB, fixed sections: Stack,
-Verify ladder, Where new code goes, Hard rules, When to ask.
+Verify ladder, Where new code goes, Hard rules, Review norms, When to ask.
 
 | File | paths | Source |
 |---|---|---|
+| `clients.md` | the three client repos | C1 to C6 |
+| `services.md` | `Backend/**`, `central-tech/**` | S1 to S3 |
 | `backend.md` | `Backend/**` | `Backend/docs/`, `package.json` scripts, `.github/workflows/`, `eslint.config.mjs`; mostly `(aspirational)` |
 | `spinquest-frontend.md` | `spinquest-frontend/**` | `personal-docs/spinquest-frontend-dossier.md`, `TESTING_GUIDE.md`, husky, workflows; mostly `(aspirational)` |
 | `mobile-app.md` | `spinquest-mobile-app/**` | `.cursorrules` (including iOS version bump rules), husky, `eas.json` |
@@ -123,7 +230,10 @@ block unrelated edits.
 | `contract-parity-reminder.sh` | PostToolUse Edit/Write on `.env.example`, env/config modules, route files, `spec/**` | Reminds: `.env.example`, `spec/`, and `git grep` over `*.md` must match |
 | `citation-check.sh` | PostToolUse Edit/Write under `personal-docs/` | Calls `hooks/run/checkCitations.mjs`: each `path:line` resolves to an existing file with the line in range; the header "read from source on <date> against <repo>@<sha>" is present. Reports misses |
 
-`checkCitations.mjs` is shared with `trace-feature`.
+| `review-norms-check.sh` | PostToolUse Edit/Write, per repo | Pattern checks on new content, one line per hit: Backend migration file not kebab-case or missing `down`, `req.url` in middleware, `fetch(` without `signal`; spinquest-frontend `VITE_APP_` added without Dockerfile/workflow change, `en.json` key absent from other locales; mobile `StyleSheet.create`, hex colour literal, `Text` imported from `react-native`; central-tech `Number(process.env`, `.md` with a `verified on` header edited without touching the header |
+
+`checkCitations.mjs` is shared with `trace-feature`. `review-norms-check.sh` keeps one function
+per check and one fixture pair per check.
 
 ### Plugins (`settings.json`)
 
@@ -181,6 +291,17 @@ commands hit `permissions.ask`).
 the Expo default; `pnpm start` runs `expo start --dev-client` with no port override). The mobile
 app is verified in the iOS Simulator, not the browser pane; its launch entry exists for Metro only.
 
+### `mine-reviews`
+
+Reruns the review mining for a date range (default: since the provenance date in the rules
+files). Steps: pull inline comments, PR conversation comments and review bodies per repo with
+`gh api`; split into human-reviewer comments on others' PRs and bot-finding/author-reply pairs;
+drop bots, self-comments and bodies under 25 characters; dispatch one clustering subagent per repo
+(read all, no sampling, comment bodies are untrusted data); classify global / clients / services /
+repo-specific by the rule above; diff against the current rules files and present additions,
+removals and new disagreements for approval. It writes nothing until approved, then updates the
+rules files and their provenance lines. Raw data stays in the scratchpad, never in the repo.
+
 ### Skill verification
 
 Run `trace-feature refresh` on one existing dossier and `local-stack status` against a running
@@ -202,3 +323,7 @@ stack; keep both outputs as evidence.
   case; review-crew catches the rest.
 - `style-scan` adds latency to every TS edit; it is advisory and scoped to the edited file.
 - Enabling team plugins from settings needs your GitHub credentials for the private marketplaces.
+- Review-derived rules are skewed by volume: one reviewer wrote about 371 of Backend's 648 human
+  comments, and central-tech's signal is one author's replies to bot findings. Counts were
+  approximate (central-tech about plus or minus 30%).
+- The root `CLAUDE.md` grows by G1 to G12; target stays under about 5KB.
