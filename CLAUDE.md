@@ -2,6 +2,8 @@
 
 Six independent git repos plus `personal-docs/`. Repo rules load from `.claude/rules/` when you touch that repo.
 
+Inside these repos, this file and `.claude/rules/` override the global rules where they conflict: keep the existing `lib/`, `utils/` and `api/` folders, each repo's log call shape, and each repo's catch-binding style.
+
 ## Repos
 
 | Repo | What | Stack | PM | Verify | Agent doc |
@@ -35,7 +37,7 @@ Six independent git repos plus `personal-docs/`. Repo rules load from `.claude/r
 ## Review norms
 
 - G1. A new test fails when the code it guards is broken: revert or mutate the fix to prove it. Never derive the expected value from the response under test. Tests ship in the same PR.
-- G2. Never swallow an error: log with context, rethrow known errors, `return await`. Only best-effort side effects (push, analytics, Intercom) warn and continue.
+- G2. Never swallow an error: log with context, rethrow known errors, `return await` inside `try` so the rejection is caught. Only best-effort side effects (push, analytics, Intercom) warn and continue.
 - G3. Branch on `code` / `errorType`, never message text or bare HTTP status. A retryable or ambiguous failure (network, 408, 5xx, malformed 2xx) is never definitive. Only the exact success signal is success.
 - G4. A change that alters a fact updates every copy in the same PR: comments, README and CONSUMER docs, `.env.example`, Docker and CI references, the PR body. Grep for stale siblings.
 - G5. Reuse existing helpers and constants before adding new ones; name magic numbers.
@@ -47,15 +49,15 @@ Six independent git repos plus `personal-docs/`. Repo rules load from `.claude/r
 - G11. Validate untrusted input strictly: `Object.hasOwn` for keyed lookups, record guards reject arrays and null, reject `''` and whitespace before `Number()`.
 - G12. Fail closed: flags default off, auth audiences and route permissions are allow-lists, stubs refuse in production.
 
-## Observed conventions
+## Conventions
 
-- CV1. Named exports only. Exceptions: expo-router route files and Storybook `meta`.
-- CV2. Module constants UPPER_SNAKE_CASE. An `as const` value set takes a PascalCase name with a same-name derived union, never `enum`.
+- CV1. New modules use named exports only. Exceptions: expo-router route files and Storybook `meta`. Leave existing default exports alone.
+- CV2. Module constants UPPER_SNAKE_CASE. An `as const` value set takes a PascalCase name with a same-name derived union, never `enum`. Exception: spinquest-mobile-app, where `enum` is the norm.
 - CV3. `interface` for object shapes; props `<Name>Props`.
-- CV4. Read env vars only through the repo's accessor: Backend `GetString`/`GetBool`/`GetInt`, frontend `@/config/env`, rips `src/config/env.ts`, central `config/env.ts`.
+- CV4. New code reads env vars only through the repo's accessor: Backend `GetString`/`GetBool`/`GetInt`, frontend `@/config/env`, rips `src/config/env.ts`, central `config/env.ts`.
 - CV5. Cross-folder imports through the repo's path alias; `./` for same-folder siblings only. Exceptions: rips-native (no aliases), spinquest-frontend (mixed).
 
-Mixed areas (50 to 80% of code) are not rules: follow the direction recent code leans; with no clear lean, match the surrounding file.
+Where code is mixed, follow the surrounding file.
 
 ## Skills
 

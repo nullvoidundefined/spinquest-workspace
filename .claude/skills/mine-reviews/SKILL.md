@@ -5,7 +5,7 @@ description: Use to rerun the PR review mining for a date range and update the r
 
 # mine-reviews
 
-Input: optional `<since-ISO-date>`. Default: the end date in the `Derived from PR reviews <start> to <end>` provenance line of `.claude/rules/*.md`. Classification and data rules live in `specs/claude_rules/2026-11-11-spinquest-workspace-harness-design.md` ("Review-derived rules"); re-read it before step 4.
+Input: optional `<since-ISO-date>`. Default: the end date in the frontmatter `source: PR reviews <start> to <end>` line of `.claude/rules/*.md`. Classification and data rules live in `specs/claude_rules/2026-11-11-spinquest-workspace-harness-design.md` ("Review-derived rules"); re-read it before step 4.
 
 ## Steps
 
@@ -20,11 +20,12 @@ Input: optional `<since-ISO-date>`. Default: the end date in the `Derived from P
    - services: only in Backend and central-tech.
    - repo-specific: anything else.
    A reasoned rejection of a bot finding is a preference; a fix is endorsement.
+   Drop any cluster that defends one feature's implementation (a product, vendor, flow or table); keep only guidance on how code is written.
    Flag any cluster where one reviewer wrote most of the supporting comments; present it to the user with that note and let them decide its scope.
 5. Diff against the current rules: read root `CLAUDE.md` (G rules) and `.claude/rules/*.md`. List additions, removals (rule no longer raised and the code no longer needs it), and new disagreements.
 6. Present the three lists and wait for approval. Write nothing before the user approves.
 7. After approval, edit only the approved rules. Keep each rules file within 4096 bytes and root `CLAUDE.md` under 6144 bytes. Carry no per-rule PR citations. Do not restate what prettier, eslint or tsconfig enforces.
-8. Update every touched file's provenance line to `Derived from PR reviews <start> to <new end>[, plus <doc>].`
+8. Update every touched file's frontmatter line to `source: PR reviews <start> to <new end>[, plus <doc>]`.
 
 ## Clustering prompt template
 

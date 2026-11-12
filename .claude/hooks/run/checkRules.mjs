@@ -1,15 +1,15 @@
-// Checks every .claude/rules markdown file (features/ included) for paths frontmatter, matching globs, size, provenance, em dashes and required headings; prints one problem per line and exits 1 if any.
+// Checks every .claude/rules markdown file (subfolders included) for paths frontmatter, matching globs, size, a frontmatter source line, em dashes, meta phrases and required headings; prints one problem per line and exits 1 if any.
 import { globSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { basename, join, relative, sep } from 'node:path'
+import { basename, join, relative } from 'node:path'
 
 const MAX_RULES_BYTES = 4096
 const EM_DASH = String.fromCodePoint(0x2014)
 const SKIPPED_DIRS = /(^|\/)(node_modules|\.git)$/
 const REPO_RULES_FILES = ['backend.md', 'spinquest-frontend.md', 'mobile-app.md', 'rips-frontend.md', 'central-tech.md']
-const REPO_HEADINGS = ['## Verify ladder', '## Conventions (observed)', '## Hard rules']
-const REVIEW_PROVENANCE = /^Derived from PR reviews \d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2}/m
-const DOSSIER_PROVENANCE = /^Derived from the personal-docs dossiers on \d{4}-\d{2}-\d{2}\.$/m
-const FEATURE_PROVENANCE = /^Distilled on \d{4}-\d{2}-\d{2} from personal-docs\//m
+const REPO_HEADINGS = ['## Verify ladder', '## Conventions', '## Hard rules']
+const REVIEW_PROVENANCE = /^source: PR reviews \d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2}/m
+const DOSSIER_PROVENANCE = /^source: personal-docs dossiers \d{4}-\d{2}-\d{2}$/m
+const META_PHRASE = /\((aspirational|inferred|observed)\b|\b\d+%|^(Derived from|Distilled on) /im
 
 function listMarkdownFiles(directory) {
   return readdirSync(directory).flatMap((entryName) => {
@@ -19,10 +19,16 @@ function listMarkdownFiles(directory) {
   })
 }
 
+function readFrontmatter(markdownText) {
+  return markdownText.match(/^---\n([\s\S]*?)\n---\n/)?.[1] ?? ''
+}
+
+function readBody(markdownText) {
+  return markdownText.replace(/^---\n[\s\S]*?\n---\n/, '')
+}
+
 function readPathGlobs(markdownText) {
-  const frontmatter = markdownText.match(/^---\n([\s\S]*?)\n---\n/)
-  if (!frontmatter) return []
-  const pathsBlock = frontmatter[1].match(/^paths:\n((?:[ \t]+-.*\n?)+)/m)
+  const pathsBlock = readFrontmatter(markdownText).match(/^paths:\n((?:[ \t]+-.*\n?)+)/m)
   if (!pathsBlock) return []
   return [...pathsBlock[1].matchAll(/^[ \t]+-[ \t]*["']?([^"'\n]+?)["']?[ \t]*$/gm)].map(([, glob]) => glob)
 }
@@ -32,9 +38,7 @@ function isGlobMatched(glob, workspaceRoot) {
   return globSync(glob, { cwd: workspaceRoot, exclude }).length > 0
 }
 
-function selectProvenancePattern(filePath, rulesDir) {
-  const relativePath = relative(rulesDir, filePath)
-  if (relativePath.startsWith(`features${sep}`)) return FEATURE_PROVENANCE
+function selectProvenancePattern(filePath) {
   return basename(filePath) === 'personal-docs.md' ? DOSSIER_PROVENANCE : REVIEW_PROVENANCE
 }
 
@@ -54,8 +58,9 @@ export function findRulesProblems(rulesDir, workspaceRoot) {
     for (const glob of globs) if (!isGlobMatched(glob, workspaceRoot)) problems.push(`GLOB_NO_MATCH ${filePath} ${glob}`)
     const byteCount = Buffer.byteLength(markdownText, 'utf8')
     if (byteCount > MAX_RULES_BYTES) problems.push(`TOO_LARGE ${filePath} ${byteCount}`)
-    if (!selectProvenancePattern(filePath, rulesDir).test(markdownText)) problems.push(`NO_PROVENANCE ${filePath}`)
+    if (!selectProvenancePattern(filePath).test(readFrontmatter(markdownText))) problems.push(`NO_PROVENANCE ${filePath}`)
     if (markdownText.includes(EM_DASH)) problems.push(`EM_DASH ${filePath}`)
+    if (META_PHRASE.test(readBody(markdownText))) problems.push(`META_PHRASE ${filePath}`)
     for (const heading of findMissingHeadings(filePath, markdownText, rulesDir)) problems.push(`MISSING_HEADING ${filePath} ${heading}`)
   }
   return problems

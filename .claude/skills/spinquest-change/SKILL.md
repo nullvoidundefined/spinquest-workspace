@@ -8,7 +8,7 @@ description: Use to implement a change in any SpinQuest repo (Backend, central-t
 ## Steps
 
 1. Name the repo. Its rules file in `.claude/rules/` loads by path.
-2. Check the team verdict in `central-tech` (`TODO.md`, `parity/`) before any Backend-dependent change. Then read the relevant dossier in `personal-docs/` (see `personal-docs/feature-flows-index.md`) and `.claude/rules/features/`.
+2. Check the team verdict in `central-tech` (`TODO.md`, `parity/`) before any Backend-dependent change. Then read the relevant dossier in `personal-docs/` (see `personal-docs/feature-flows-index.md`).
 3. Implement through `superpowers:test-driven-development`. Spinquest-style applies via the hook.
 4. Run the repo's verify ladder from the table below, in order. End with the real path in the browser pane or simulator and one failure path.
 5. Run the contract checklist when an env var, route, field, or error code changes.

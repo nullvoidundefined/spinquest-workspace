@@ -69,7 +69,7 @@ checkLocaleParity() {
 checkNativeStyling() {
   [[ "$repo" == spinquest-mobile-app ]] || return 0
   grep -qE "StyleSheet\.create|#[0-9a-fA-F]{6}\b|import \{ Text \} from ['\"]react-native['\"]" <<<"$newContent" \
-    && echo "mobile: StyleSheet.create, hex colour literal or raw RN Text; use theme tokens and shared Text (aspirational norm, new content only)"
+    && echo "mobile: StyleSheet.create, hex colour literal or raw RN Text; use theme tokens and shared Text (new code only)"
 }
 
 checkNumberEnv() {

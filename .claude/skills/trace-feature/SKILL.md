@@ -10,12 +10,11 @@ Input: a feature or question, or `refresh <dossier>`. Dossiers live in `personal
 ## Trace mode
 
 1. Record `branch@sha` of each relevant repo: `git -C <repo> rev-parse --abbrev-ref HEAD` and `git -C <repo> rev-parse --short HEAD`.
-2. Dispatch one `repo-tracer` subagent per relevant repo, in parallel. Give each the feature, the repo, and the facts format. Check `.claude/rules/features/` and `personal-docs/feature-flows-index.md` first for an existing dossier.
+2. Dispatch one `repo-tracer` subagent per relevant repo, in parallel. Give each the feature, the repo, and the facts format. Check `personal-docs/feature-flows-index.md` first for an existing dossier.
 3. Dispatch one `repo-tracer` pass over `central-tech` for the team verdict (`TODO.md`, `parity/`, `reference/`, bug docs). Record what was not found.
 4. Write `personal-docs/<feature-slug>.md` in the dossier style below.
 5. From the workspace root, run `node .claude/hooks/run/checkCitations.mjs personal-docs/<feature-slug>.md`. It prints `MISSING`, `OUT_OF_RANGE`, and `NO_HEADER` lines. Fix each, rerun until clean. If it cannot run (for example a denied permission prompt), say so in Not verified and do not claim citations were checked mechanically.
 6. Add a row to `personal-docs/feature-flows-index.md`.
-7. Offer (do not do automatically) to create a matching `.claude/rules/features/<doc>.md` with the provenance line `Distilled on <date> from personal-docs/<doc>.md; re-check with /trace-feature refresh.`
 
 ## Refresh mode
 
@@ -25,7 +24,7 @@ Input: `refresh <dossier>`.
 2. From the workspace root, run `node .claude/hooks/run/checkCitations.mjs <dossier>`. It catches only missing files, out-of-range lines, and a missing header. It cannot see a citation whose line moved but is still in range. If it cannot run (for example a denied permission prompt), say so and do not claim citations were checked mechanically.
 3. Find moved-but-in-range citations with a `repo-tracer` pass over every cited area, or by diffing each repo from the old sha to the current sha (`git -C <repo> diff <old>..HEAD -- <cited files>`). An empty `git diff <old>..HEAD` under the current-HEAD fallback (no recorded old sha) is not evidence that nothing moved; a `repo-tracer` pass is then required. For each flagged or suspect claim, report: moved (new line), vanished, or still correct.
 4. Rewrite the header shas and date. Add the source sentence if the dossier lacks one.
-5. Offer to update `.claude/rules/features/<doc>.md` and `personal-docs/feature-flows-index.md` (the index is stale about native-app coverage).
+5. Offer to update `personal-docs/feature-flows-index.md` (the index is stale about native-app coverage).
 6. Dry run: when told to report and not write, do steps 1 to 3 and print the findings. Write nothing.
 
 ## Dossier style
