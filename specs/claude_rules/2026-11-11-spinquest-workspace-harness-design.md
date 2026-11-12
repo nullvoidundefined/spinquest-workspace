@@ -6,8 +6,10 @@ Date: 2026-11-11. Status: approved in conversation, awaiting written-spec review
 
 A personal Claude Code harness at the `spinquest/` workspace root, active when Claude is launched
 from that folder. It layers on the global `claude-global-rules` harness and restates none of it.
-It encodes the SpinQuest-specific norms already observed across the six repos, blocks a short list
-of hard invariants, keeps everything else advisory, and gives three workflows a skill each.
+It encodes the SpinQuest-specific norms from three sources (the repos' own docs, six months of PR
+reviews, and a survey of what the code predominantly does), plus per-feature rules distilled from
+the seven `personal-docs` dossiers. It blocks a short list of hard invariants, keeps everything
+else advisory, and gives each workflow a skill.
 
 Success means:
 
@@ -35,6 +37,9 @@ here), per-repo `CLAUDE.md` files inside the six repos, Linear/ticket workflows.
 | aspirational | A rule the repo's current code does not yet follow; tagged `(aspirational)` in rules files |
 | provenance line | One line per rules file naming the review date range and repo docs its rules were derived from |
 | review norm | A rule derived from PR review data (G, C, S or repo-specific) |
+| observed convention | A pattern followed by at least 80% of a repo's measured code (CV rules and per-repo "Conventions (observed)") |
+| mixed area | A pattern at 50 to 80%; never a rule, resolved by the mixed-area default |
+| feature rules | A path-scoped rules file under `rules/features/` holding one dossier's invariants and gotchas |
 
 ## Layout
 
@@ -42,23 +47,25 @@ here), per-repo `CLAUDE.md` files inside the six repos, Linear/ticket workflows.
 spinquest/
 ├── .gitignore                    # excludes the six repos (each is its own git repo)
 ├── CLAUDE.md                     # workspace map + cross-repo invariants
-├── docs/superpowers/specs/       # this spec
+├── specs/claude_rules/           # this spec and its implementation plan
+│   └── research/                 # survey, feature-rule and dossier-style source material
 └── .claude/
     ├── settings.json             # hooks, permissions.ask, marketplaces, enabled plugins
     ├── launch.json               # dev servers for preview_start
-    ├── rules/                    # path-scoped, one per repo + personal-docs
+    ├── rules/                    # path-scoped: clients, services, one per repo, personal-docs
+    │   └── features/             # one per dossier (7)
     ├── hooks/                    # guard and advisory scripts, run/ helpers, fixtures/, test-hooks.sh
     ├── agents/repo-tracer.md
     └── skills/{trace-feature,spinquest-change,local-stack,mine-reviews}/SKILL.md
 ```
 
 Versioning: `git init` at `spinquest/`, local only, no remote. Tracked: `CLAUDE.md`, `.claude/`,
-`docs/`, `personal-docs/`, `start-local-stack.sh`, `.gitignore`. Ignored: the six repo
+`specs/`, `personal-docs/`, `start-local-stack.sh`, `.gitignore`. Ignored: the six repo
 directories and `.DS_Store`.
 
 ## Root CLAUDE.md
 
-Target size under about 5KB. Sections:
+Target size under 6KB. Sections:
 
 1. **Repo table.** Each repo: what it is, stack, package manager, verify commands, where its own
    agent doc lives (`central-tech/AGENTS.md`, `spinquest-rips-frontend/AGENTS.md`,
@@ -76,6 +83,8 @@ Target size under about 5KB. Sections:
    8. An agent review runs in a fresh session, never the session that wrote the code.
    9. Each repo is its own git repo: commit inside it, no imports across repo roots.
 4. **Review-derived global rules** (G1 to G12, see "Review-derived rules").
+5. **Observed global conventions** (CV1 to CV5, see "Observed code conventions") and the
+   mixed-area default.
 
 ## Review-derived rules
 
@@ -141,14 +150,16 @@ otherwise **repo-specific**.
 
 ### Repo-specific (added to each repo's rules file under "Hard rules" or "Review norms")
 
-- **Backend:** atomic flows write only through the transaction's queryRunner/EntityManager, never
-  a global repository (aspirational: common today, deadlocks the 3-connection PR-env pool);
+- **Backend:** atomic flows run in `isolatedTransaction(async (em) => ...)` and write only through
+  that EntityManager, never a global repository (aspirational for the global-repository part:
+  common today, deadlocks the 3-connection PR-env pool);
   notifications, email and socket pushes send after commit; `down()` fully reverts, an applied
   migration is never edited, filenames are kebab-case; `innerJoin` over `innerJoinAndSelect` when
   the join is not read, `getExists()` over `getOne()`; `withDeleted` is a deliberate choice, and
   gameplay and payout paths exclude banned users; `req.path`, never `req.url`, in middleware;
   specific error types, no internal text leaked to clients; `LoggerInterface` and `warnOnce`,
-  never `console`; PRDs and design notes live in Notion or Linear; skip race hardening for
+  never `console` (aspirational: 50 calls remain); booleans `is`/`has`/`did` (aspirational: 21%
+  today); PRDs and design notes live in Notion or Linear; skip race hardening for
   millisecond windows unless the fix is one index or `WHERE` clause.
 - **central-tech:** no volatile counts in prose; tense matches state, no heading pinned to a PR
   number; bump the `verified on` header when adding a newer fact; read untrusted input once and
@@ -162,7 +173,8 @@ otherwise **repo-specific**.
   committed minified.
 - **spinquest-mobile-app:** navigate through `navigateToLobby` and `dismissTo`, never a duplicate
   tab stack; check `appGuardType === null` before opening any modal; style with NativeWind
-  `className` and theme colours only, no hex, no `StyleSheet`, `Text` from `@/components/ui`;
+  `className` and theme colours only, no hex, no `StyleSheet` (aspirational: 37% of files use hex
+  today), `Text` from `@/components/ui`;
   shared mocks in `vitest.setup.ts`; effects return cleanup and null timer refs; analytics in
   dollars, no double counting.
 - **spinquest-rips-frontend:** the debug tape redacts response bodies; mutations carrying secrets
@@ -176,24 +188,84 @@ otherwise **repo-specific**.
 | Fix adjacent bugs vs stay in scope | Stay in scope (G9); clean only touched lines |
 | Tests in the same PR vs follow-up | Same PR (G1); deferral needs the reviewer's agreement |
 | Env var vs constant | S1 split: constant when a build is needed anyway or a wrong value is dangerous |
-| Global repository inside a transaction | Transaction manager only (aspirational) |
+| Global repository inside a transaction | `isolatedTransaction` EntityManager only (aspirational) |
 | Figma focus-ring removal vs accessibility | Accessibility wins (C5); flag to design |
+
+## Observed code conventions
+
+Source: read-only surveys of each repo on 2026-11-11 (counts, then ~15 files read per repo). Full
+material, including per-repo conventions, mixed areas and tooling skip lists:
+`specs/claude_rules/research/2026-11-11-code-conventions.md`. A convention is >=80% of measured
+code. Anything prettier, eslint or tsconfig enforces is never restated.
+
+**Mixed-area default:** a pattern at 50 to 80% is never written as a rule. Follow the direction
+recent code leans; with no clear lean, match the surrounding file. Root `CLAUDE.md` states this.
+
+### Global (root `CLAUDE.md`)
+
+- CV1. Named exports only. Exceptions: expo-router route files and Storybook `meta`.
+- CV2. Module constants UPPER_SNAKE_CASE; an `as const` value set has a PascalCase name with a
+  same-name derived union, instead of `enum`.
+- CV3. `interface` for object shapes; props `<Name>Props`.
+- CV4. Env vars only through the repo's accessor (Backend `GetString`/`GetBool`/`GetInt`; frontend
+  `@/config/env`; rips `src/config/env.ts`; central `config/env.ts`).
+- CV5. Cross-folder imports through the repo's path alias; `./` for same-folder siblings only.
+  Exceptions: rips-native (no aliases), spinquest-frontend (mixed).
+
+### Clients (added to `rules/clients.md`)
+
+- Tests: `describe` + `it`, never `test`; explicit vitest imports; role and text queries, not test ids.
+- spinquest-frontend and mobile share one data architecture: HTTP in
+  `src/lib/api/<domain>/index.ts` via `customInstance`; React Query hooks in
+  `features/<f>/api/use-*.ts` returning `useQuery`/`useMutation` directly; keys in `api/keys.ts`;
+  `use<Name>Store` zustand stores read through selectors; react-hook-form + `zodResolver`; routes
+  from `ROUTES`/`ROUTE_*`; analytics through `trackEvent` with a registered name.
+- Component declaration, styling system, test location and React import differ by repo on purpose
+  and live only in each repo's file.
+
+### Per repo ("Conventions (observed)" section in each repo rules file)
+
+Taken from the research file's per-repo "Conventions" lists. Corrections that come with them:
+
+- `mobile-app.md` states that it overrides `.cursorrules` where they disagree and lists the
+  `.cursorrules` items at or near 0% adherence (`// RULES ACTIVE` header, PascalCase files,
+  kebab/dotted i18n keys, the query-hook template, hierarchical keys, `schemas/` location, barrels,
+  `error.message` in `onError`).
+- `rips-frontend.md` adds: eslint ignores `packages/rips-native/**` and `apps/**`, so apply import
+  order, `===` and no-floating-promises there by hand.
+- `spinquest-frontend.md` notes `import/no-restricted-paths` is configured with no zones.
+
+## Feature rules
+
+Seven files in `.claude/rules/features/`: `feature-flags.md`, `signup-and-onboarding.md`,
+`first-time-user-experience.md`, `lobby.md`, `promotions-and-bonuses.md`, `notifications.md`,
+`payments.md`. Content source: `specs/claude_rules/research/2026-11-11-feature-rules.md`.
+
+Each file: `paths:` covering the feature's code in every repo (brace globs expanded to one entry
+each), then sections Summary (one line), Invariants, Gotchas, Start here, then a provenance line
+`Distilled on 2026-11-11 from personal-docs/<doc>.md; re-check with /trace-feature refresh.` Up to
+4KB each. "(inferred)" stays on lines taken from an "Inferred:" statement. Overlapping paths are
+intended: several feature files may load for one edit.
+
+`feature-flags.md` also serves as the file that two `spinquest-frontend` comments cite
+(`.claude/rules/frontend/feature-flags.md`, never committed); its Summary names that path.
 
 ## Path-scoped rules
 
-`.claude/rules/<name>.md`, each with `paths:` frontmatter, 1 to 3KB, fixed sections: Stack,
-Verify ladder, Where new code goes, Hard rules, Review norms, When to ask.
+`.claude/rules/<name>.md`, each with `paths:` frontmatter, up to 4KB, fixed sections: Stack,
+Verify ladder, Where new code goes, Conventions (observed), Hard rules, Review norms, When to ask.
 
 | File | paths | Source |
 |---|---|---|
-| `clients.md` | the three client repos | C1 to C6 |
+| `clients.md` | the three client repos | C1 to C6, client conventions |
 | `services.md` | `Backend/**`, `central-tech/**` | S1 to S3 |
+| `features/*.md` | per feature | See "Feature rules" |
 | `backend.md` | `Backend/**` | `Backend/docs/`, `package.json` scripts, `.github/workflows/`, `eslint.config.mjs`; mostly `(aspirational)` |
 | `spinquest-frontend.md` | `spinquest-frontend/**` | `personal-docs/spinquest-frontend-dossier.md`, `TESTING_GUIDE.md`, husky, workflows; mostly `(aspirational)` |
 | `mobile-app.md` | `spinquest-mobile-app/**` | `.cursorrules` (including iOS version bump rules), husky, `eas.json` |
 | `rips-frontend.md` | `spinquest-rips-frontend/**` | Points at the repo's `AGENTS.md` (auto-loaded via its `CLAUDE.md`); top five hard rules only |
 | `central-tech.md` | `central-tech/**` | Points at `AGENTS.md` and the central-conventions skills; drafts vs Notion rule |
-| `personal-docs.md` | `personal-docs/**` | Dossier layout, header line format, "Inferred:" convention, trust section |
+| `personal-docs.md` | `personal-docs/**` | `specs/claude_rules/research/2026-11-11-dossier-style.md` |
 
 ## Hooks
 
@@ -228,9 +300,8 @@ block unrelated edits.
 | `workspace-status.sh` | SessionStart | One line per repo: branch, dirty file count, commits behind its upstream from local refs (no fetch) |
 | `style-scan.sh` | PostToolUse Edit/Write, `*.{ts,tsx,js,jsx,mjs}` | Runs `claude-skills/plugins/spinquest-style/skills/spinquest-style/scripts/scan.mjs` on the file; feeds findings back; silent when clean or the script is missing |
 | `contract-parity-reminder.sh` | PostToolUse Edit/Write on `.env.example`, env/config modules, route files, `spec/**` | Reminds: `.env.example`, `spec/`, and `git grep` over `*.md` must match |
-| `citation-check.sh` | PostToolUse Edit/Write under `personal-docs/` | Calls `hooks/run/checkCitations.mjs`: each `path:line` resolves to an existing file with the line in range; the header "read from source on <date> against <repo>@<sha>" is present. Reports misses |
-
-| `review-norms-check.sh` | PostToolUse Edit/Write, per repo | Pattern checks on new content, one line per hit: Backend migration file not kebab-case or missing `down`, `req.url` in middleware, `fetch(` without `signal`; spinquest-frontend `VITE_APP_` added without Dockerfile/workflow change, `en.json` key absent from other locales; mobile `StyleSheet.create`, hex colour literal, `Text` imported from `react-native`; central-tech `Number(process.env`, `.md` with a `verified on` header edited without touching the header |
+| `citation-check.sh` | PostToolUse Edit/Write under `personal-docs/` | Calls `hooks/run/checkCitations.mjs`: each full workspace-relative `path:line` citation resolves to an existing file with the line in range; a source statement is present in the first 25 lines (the `Read from source on` header or a sentence containing a backticked 7 to 40 char sha). Bare-filename citations are not checked. Reports misses |
+| `review-norms-check.sh` | PostToolUse Edit/Write, per repo | Pattern checks on new content, one line per hit: Backend migration file not kebab-case or missing `down`, `req.url` in middleware, `fetch(` without `signal`; spinquest-frontend `VITE_APP_` added without Dockerfile/workflow change, `en.json` key absent from other locales; mobile `StyleSheet.create`, hex colour literal (in new content only), `Text` imported from `react-native`; central-tech `Number(process.env`, `.md` with a `verified on` header edited without touching the header |
 
 `checkCitations.mjs` is shared with `trace-feature`. `review-norms-check.sh` keeps one function
 per check and one fixture pair per check.
@@ -257,13 +328,18 @@ Input: a feature or question, or `refresh <dossier>`.
 1. Record `branch@sha` of each repo.
 2. Dispatch one `repo-tracer` subagent per relevant repo in parallel.
 3. Dispatch one central-tech pass for the team verdict.
-4. Write the dossier in the fixed layout: summary, at a glance, the flow (with a diagram), states
-   and data, configuration, edge cases, what central-tech says, gaps and risks, not verified.
+4. Write the dossier in the canonical style from
+   `specs/claude_rules/research/2026-11-11-dossier-style.md`: H1 `# <Feature>: how it works today`,
+   opening paragraph, source header line, then At a glance, The flow (one mermaid
+   `sequenceDiagram`), States and data, Configuration, Edge cases and failure handling, What the
+   team has already said, Gaps, oddities, and risks, Not verified.
 5. Run `checkCitations.mjs`; fix misses.
 6. Add a row to `personal-docs/feature-flows-index.md`.
 
 `refresh` re-runs step 1 and 5 on an existing dossier, rewrites the header shas, and lists claims
-whose cited lines moved or vanished for re-reading.
+whose cited lines moved or vanished for re-reading. It also adds a missing source sentence and,
+after a refresh, offers to update the matching `rules/features/<doc>.md` and
+`feature-flows-index.md` (which is stale about native-app coverage).
 
 `.claude/agents/repo-tracer.md`: read-only (Read, Grep, Glob, read-only Bash), model Sonnet.
 Returns facts, each with `path:line` and labelled `read` or `Inferred:`.
@@ -326,4 +402,9 @@ stack; keep both outputs as evidence.
 - Review-derived rules are skewed by volume: one reviewer wrote about 371 of Backend's 648 human
   comments, and central-tech's signal is one author's replies to bot findings. Counts were
   approximate (central-tech about plus or minus 30%).
-- The root `CLAUDE.md` grows by G1 to G12; target stays under about 5KB.
+- The root `CLAUDE.md` grows by G1 to G12 and CV1 to CV5; target stays under 6KB.
+- Feature rules describe current behaviour, including bugs listed as gotchas; they go stale when
+  the code moves and need `trace-feature refresh`. An edit inside a feature's paths loads up to
+  three rules files (repo, clients/services, feature), up to about 12KB of context.
+- central-tech conventions were measured on packages, the service template and vendor-stubs; the
+  real service repos are not in the workspace.
