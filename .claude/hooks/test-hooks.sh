@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fixture runner: replays hook payload fixtures against hook scripts and checks exit code, stderr and stdout per case prefix (optional <case>.expect lists substrings stdout must contain).
+# Fixture runner: replays hook payload fixtures against hook scripts and checks exit code, stderr and stdout per case prefix (block, pass, warn, ask) (optional <case>.expect lists substrings stdout must contain).
 WS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 HOOKS="$WS/.claude/hooks"
 FIXTURES="$HOOKS/fixtures"
@@ -39,6 +39,7 @@ runFixture() { # <hook> <fixture json>
     block-*) [[ $code -eq 2 && -n "$stderr" ]] && verdict=PASS || verdict=FAIL ;;
     pass-*)  [[ $code -eq 0 && -z "$stdout" ]] && verdict=PASS || verdict=FAIL ;;
     warn-*)  [[ $code -eq 0 && "$stdout" == *additionalContext* ]] && verdict=PASS || verdict=FAIL ;;
+    ask-*)   [[ $code -eq 0 && "$stdout" == *'"permissionDecision":"ask"'* ]] && verdict=PASS || verdict=FAIL ;;
     *) verdict=FAIL ;;
   esac
   local expectFile="${file%.json}.expect" expected

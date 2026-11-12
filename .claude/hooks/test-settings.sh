@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Asserts .claude/settings.json is valid JSON, every hook command resolves to an
-# executable, every hook script is wired, and the ask-permissions and credential guard registration are present.
+# executable, every hook script is wired, and the ask-permissions, credential guard and dependency guard registrations are present.
 WS="${BASH_SOURCE[0]%/*}/../.."
 WS="$(cd "$WS" && pwd)"
 SETTINGS="$WS/.claude/settings.json"
@@ -30,6 +30,9 @@ for rule in 'Bash(eas update:*)' 'Bash(eas submit:*)' 'Bash(eas build:*)' 'Bash(
   'Bash(pnpm update:*)' 'Bash(pnpm submit:*)' 'Bash(pnpm release:*)' 'Bash(pnpm build:prod:*)' 'Bash(pnpm build:staging:*)' 'Bash(pnpm build:preview:*)' 'Bash(pnpm build:testflight:*)' 'Bash(pnpm rebuild:*)' 'Bash(pnpm fastlane:*)' 'Bash(bundle exec fastlane:*)' 'Bash(npx eas:*)' 'Bash(pnpm exec eas:*)' 'Bash(pnpm typeorm migration:*)'; do
   jq -e --arg rule "$rule" '.permissions.ask // [] | index($rule)' "$SETTINGS" >/dev/null || fail "missing ask rule: $rule"
 done
+
+jq -e '.hooks.PreToolUse[] | select(.hooks[].command | test("dependency-add-guard")) | .matcher
+  | select(test("Bash") and test("Edit") and test("Write") and test("MultiEdit"))' "$SETTINGS" >/dev/null || fail "dependency guard not registered under PreToolUse with Bash, Edit, Write and MultiEdit matcher"
 
 jq -e '.hooks.PreToolUse[] | select(.hooks[].command | test("credential-files-guard")) | .matcher
   | select(test("Read") and test("Grep") and test("Bash"))' "$SETTINGS" >/dev/null || fail "credential guard not registered under PreToolUse with Read, Grep and Bash matcher"

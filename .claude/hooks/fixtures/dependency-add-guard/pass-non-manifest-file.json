@@ -1,0 +1,1 @@
+{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"__WS__/Backend/src/index.ts","old_string":"x","new_string":"const deps = { \"left-pad\": \"^1.3.0\" }"},"cwd":"__WS__/Backend"}

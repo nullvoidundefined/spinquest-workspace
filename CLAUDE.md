@@ -33,6 +33,7 @@ Inside these repos, this file and `.claude/rules/` override the global rules whe
 7. One capability, one place; link instead of retelling.
 8. Run an agent review in a fresh session, never the session that wrote the code.
 9. Each repo is its own git repo: commit inside it, never import across repo roots.
+10. Adding a package needs administrator approval. This covers runtime and dev dependencies, Expo modules, and ESLint, Babel or Vite plugins. Never add one for convenience: first solve the need with existing code, an existing dependency or a platform API. If none fits, stop and present the need, what you tried, and the package's license, maintenance and size, then add it only after the user confirms approval. `dependency-add-guard` asks before any install command or `package.json` addition.
 
 ## Review norms
 
