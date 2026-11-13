@@ -1,0 +1,1 @@
+{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"eas build --profile development --platform ios --local"},"cwd":"__WS__/Backend"}

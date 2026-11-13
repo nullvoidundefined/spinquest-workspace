@@ -3,39 +3,84 @@
     "PreToolUse": [
       {
         "matcher": "Read|Grep|Glob|Edit|Write|MultiEdit|Bash",
-        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/credential-files-guard.sh" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/credential-files-guard.sh"
+          }
+        ]
       },
       {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/cross-repo-import-guard.sh" },
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/rips-boundary-guard.sh" },
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/client-identity-guard.sh" }
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/cross-repo-import-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/rips-boundary-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/client-identity-guard.sh"
+          }
         ]
       },
       {
         "matcher": "Bash",
-        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/hook-bypass-guard.sh" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/hook-bypass-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deploy-ask-guard.sh"
+          }
+        ]
       },
       {
         "matcher": "Bash|Edit|Write|MultiEdit",
-        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/dependency-add-guard.sh" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/dependency-add-guard.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/style-scan.sh" },
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/contract-parity-reminder.sh" },
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/citation-check.sh" },
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/review-norms-check.sh" }
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/style-scan.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/contract-parity-reminder.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/citation-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/review-norms-check.sh"
+          }
         ]
       }
     ],
     "SessionStart": [
       {
-        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/workspace-status.sh" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/workspace-status.sh"
+          }
+        ]
       }
     ]
   },
@@ -67,8 +112,18 @@
     ]
   },
   "extraKnownMarketplaces": {
-    "spinquest": { "source": { "source": "github", "repo": "BetsphereORG/claude-skills" } },
-    "central-tech": { "source": { "source": "github", "repo": "BetsphereORG/central-tech" } }
+    "spinquest": {
+      "source": {
+        "source": "github",
+        "repo": "BetsphereORG/claude-skills"
+      }
+    },
+    "central-tech": {
+      "source": {
+        "source": "github",
+        "repo": "BetsphereORG/central-tech"
+      }
+    }
   },
   "enabledPlugins": {
     "create-linear-ticket@spinquest": true,

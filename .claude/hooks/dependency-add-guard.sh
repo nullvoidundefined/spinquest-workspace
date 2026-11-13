@@ -10,15 +10,7 @@ REASON='Adding a package needs administrator approval. Allow only if the user co
 VALUE_OPTIONS=' -C --dir --filter -F --prefix --cwd --workspace --registry '
 VERSION_VALUE='"([@A-Za-z0-9._/-]+)"[[:space:]]*:[[:space:]]*"(\^|~|>|<|=|\*|[0-9]|workspace:|npm:|file:|link:|git|github:|https?:|latest|next)'
 
-askUser() { # <detail>
-  jq -cn --arg reason "[$GUARD] $REASON $1" \
-    '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:$reason}}'
-  exit 0
-}
-
-listSegments() {
-  sed -E "s/\"[^\"]*\"//g; s/'[^']*'//g; s/(&&|\|\||;|\|)/\n/g" <<<"$1"
-}
+askUser() { askWith "$GUARD" "$REASON $1"; }
 
 # Prints the first argument after the install subcommand that is not a flag, if any.
 findPackageArgument() { # <tokens...>

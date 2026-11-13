@@ -1,0 +1,1 @@
+{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"pnpm typeorm migration:revert"},"cwd":"__WS__/Backend"}

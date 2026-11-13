@@ -5,6 +5,12 @@ emitContext() { # <event> <text>
   jq -cn --arg event "$1" --arg text "$2" '{hookSpecificOutput:{hookEventName:$event,additionalContext:$text}}'
 }
 
+askWith() { # <guard> <reason>: forces a permission prompt in every permission mode
+  jq -cn --arg reason "[$1] $2" \
+    '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:$reason}}'
+  exit 0
+}
+
 blockWith() { # <guard> <reason>
   printf '[%s] %s\n' "$1" "$2" >&2
   exit 2

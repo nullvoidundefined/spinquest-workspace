@@ -24,3 +24,8 @@ readFilePath() {
 readNewContent() {
   jq -r '[.tool_input.content, .tool_input.new_string, (.tool_input.edits[]?.new_string)] | map(select(. != null)) | join("\n")' <<<"$PAYLOAD"
 }
+
+# Command text with quoted strings removed and segments split onto separate lines.
+listSegments() {
+  sed -E "s/\"[^\"]*\"//g; s/'[^']*'//g; s/(&&|\|\||;|\|)/\n/g" <<<"$1"
+}

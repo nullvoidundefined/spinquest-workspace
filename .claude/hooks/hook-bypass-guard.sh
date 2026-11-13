@@ -11,11 +11,6 @@ pushStart="${gitPrefix}push([[:space:]]|\$)"
 bypassFlag='(^|[[:space:]])(--no-verify|-[a-zA-Z]*n[a-zA-Z]*)([[:space:]]|$)'
 longBypassFlag='(^|[[:space:]])--no-verify([[:space:]]|$)'
 
-# Command text with quoted strings removed and segments split onto separate lines.
-listSegments() {
-  sed -E "s/\"[^\"]*\"//g; s/'[^']*'//g; s/(&&|\|\||;|\|)/\n/g" <<<"$1"
-}
-
 command="$(readCommand)"
 [[ -z "$command" ]] && exit 0
 segments="$(listSegments "$command")"
