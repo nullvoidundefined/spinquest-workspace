@@ -1,0 +1,1 @@
+{"hook_event_name":"PreToolUse","tool_name":"Grep","tool_input":{"pattern":"key","path":"__WS__/spinquest-mobile-app","glob":"google-serv*"},"cwd":"__WS__/Backend"}
