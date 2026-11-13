@@ -42,7 +42,7 @@ Inside these repos, this file and `.claude/rules/` override the global rules whe
 - G3. Branch on `code` / `errorType`, never message text or bare HTTP status. A retryable or ambiguous failure (network, 408, 5xx, malformed 2xx) is never definitive. Only the exact success signal is success.
 - G4. A change that alters a fact updates every copy in the same PR: comments, README and CONSUMER docs, `.env.example`, Docker and CI references, the PR body. Grep for stale siblings.
 - G5. Reuse existing helpers and constants before adding new ones; name magic numbers.
-- G6. Delete dead code, commented-out code and comments that restate the code. Comments never narrate history. Product TODOs go to Linear; only technical TODOs stay in code.
+- G6. Delete dead code, commented-out code and comments that restate the code. Comments and docs describe what is, not how it came to be: explain a non-obvious constraint, never what was found, what it replaced or when. That story belongs in the commit. Product TODOs go to Linear; only technical TODOs stay in code.
 - G7. Keep tokens, OTPs, card and bank numbers and PII out of logs, telemetry, URLs, debug tapes and caches.
 - G8. A repeated action is a no-op. An idempotency key survives an ambiguous failure and retires only on a definite answer. Disable conflicting controls while a write is in flight.
 - G9. A pre-existing or out-of-scope defect gets a ticket or a TODO row, not a wider PR. Clean up only lines the PR already touches.
