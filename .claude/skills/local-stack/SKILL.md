@@ -5,7 +5,7 @@ description: Use to run or inspect the SpinQuest local stack. Modes are up (star
 
 # local-stack
 
-Input: a mode (`up`, `status`, `test-user`, `staging`). Default `status`. Sources: `personal-docs/start-local-stack.sh`, `personal-docs/local-development.md`, `personal-docs/staging-deploys.md`, `personal-docs/non-prod-geo-and-test-user-plan.md`. Re-read the one you need; do not rely on this summary for details.
+Input: a mode (`up`, `status`, `test-user`, `staging`). Default `status`. Sources: `personal-docs/start-local-stack.sh` (local), and in Notion (links in `.claude/notion-docs.md`): Running SpinQuest locally, How SpinQuest staging deploys work, and the non-production geo override and test-user plan. Re-read the one you need; do not rely on this summary for details.
 
 ## up
 
@@ -36,7 +36,7 @@ Report one line per service. `/status/health` (StatusController) returns `{statu
 
 ## test-user
 
-1. Read `personal-docs/non-prod-geo-and-test-user-plan.md` first. It is a planning spike, not a shipped feature.
+1. Read the Notion page for the non-production geo override and test-user plan first. It is a planning spike, not a shipped feature.
 2. Local runs already bypass GeoComply on the client (`import.meta.env.DEV`). The Backend gates server-side; the `@spinquest.com` email and `GEO_WHITELIST` bypasses are recorded bugs, never durable.
 3. Deployed non-prod (sbx, staging, PR previews): present the plan's options and open decision questions; do not invent a path. The act-as design applies to the central stack on sbx only.
 4. Never create an account on a production host. Never use `POST /mock/geoPackage` or the legacy bypass as a recommendation. Use throwaway accounts only.
@@ -44,7 +44,7 @@ Report one line per service. `/status/health` (StatusController) returns `{statu
 
 ## staging
 
-Walkthrough only; read `personal-docs/staging-deploys.md` first.
+Walkthrough only; read the Notion page How SpinQuest staging deploys work first.
 
 1. Explain the flow: merge to the default branch (`PeterSons` for Backend, `main` for spinquest-frontend), CI builds a GHCR image, the image updater commits the digest to `argo-staging`, ArgoCD syncs.
 2. State the database facts: a Backend deploy runs pending migrations in place, no backup first, no automatic rollback, and a failed deploy can leave the schema half migrated.

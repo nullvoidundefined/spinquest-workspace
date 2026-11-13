@@ -9,6 +9,7 @@ const REPO_RULES_FILES = ['backend.md', 'spinquest-frontend.md', 'mobile-app.md'
 const REPO_HEADINGS = ['## Verify ladder', '## Conventions', '## Hard rules']
 const REVIEW_PROVENANCE = /^source: PR reviews \d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2}/m
 const DOSSIER_PROVENANCE = /^source: personal-docs dossiers \d{4}-\d{2}-\d{2}$/m
+const SURVEY_PROVENANCE = /^source: codebase naming survey \d{4}-\d{2}-\d{2}$/m
 const META_PHRASE = /\((aspirational|inferred|observed)\b|\b\d+%|^(Derived from|Distilled on) /im
 
 function listMarkdownFiles(directory) {
@@ -39,7 +40,9 @@ function isGlobMatched(glob, workspaceRoot) {
 }
 
 function selectProvenancePattern(filePath) {
-  return basename(filePath) === 'personal-docs.md' ? DOSSIER_PROVENANCE : REVIEW_PROVENANCE
+  const fileName = basename(filePath)
+  if (fileName === 'personal-docs.md') return DOSSIER_PROVENANCE
+  return fileName.endsWith('-lexicon.md') ? SURVEY_PROVENANCE : REVIEW_PROVENANCE
 }
 
 function findMissingHeadings(filePath, markdownText, rulesDir) {

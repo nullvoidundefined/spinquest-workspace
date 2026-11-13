@@ -71,6 +71,7 @@
     "central-tech": { "source": { "source": "github", "repo": "BetsphereORG/central-tech" } }
   },
   "enabledPlugins": {
+    "create-linear-ticket@spinquest": true,
     "spinquest-style@spinquest": true,
     "review-crew@spinquest": true,
     "dependabot-review@spinquest": true,

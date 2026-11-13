@@ -6,12 +6,12 @@ source: personal-docs dossiers 2026-11-11
 
 # personal-docs dossiers
 
-Write and refresh dossiers with `/trace-feature`. A new dossier gets a row in `feature-flows-index.md`.
+Dossiers live in Notion (links in `.claude/notion-docs.md`). Files here are working drafts only: `/trace-feature` writes, checks, publishes and then deletes them. Never treat a local draft as the source. `start-local-stack.sh` is the one permanent file.
 
 ## Hard rules
 
 - H1 `# <Feature>: how it works today`.
-- H2s in order: At a glance, The flow, States and data, Configuration, Edge cases and failure handling, What the team has already said, `Gaps, oddities, and risks`, Not verified. Add an extra H2 only where the feature needs one.
+- H2s in order: At a glance, Architecture, API, The flow, States and data, Configuration, Edge cases and failure handling, What the team has already said, `Gaps, oddities, and risks`, Not verified. Add an extra H2 only where the feature needs one.
 - Opening: one dense paragraph of 3 to 5 sentences: the whole mechanism, the main endpoints in backticks, the headline gap or "there is no X". Scope exclusions get their own short paragraph.
 - Then the source line: `Read from source on YYYY-MM-DD against <repo>@<sha>, <repo>@<sha>.`
 - Every claim carries a citation: inline, in parentheses, backticked. Full workspace-relative path on first use, then the bare filename or `:line`. Ranges `:66-71`, lists `:14,29`. `(grep)` marks a finding that something is absent.

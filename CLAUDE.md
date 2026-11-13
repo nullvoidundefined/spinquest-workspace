@@ -2,7 +2,7 @@
 
 Six independent git repos plus `personal-docs/`. Repo rules load from `.claude/rules/` when you touch that repo.
 
-Inside these repos, this file and `.claude/rules/` override the global rules where they conflict: keep the existing `lib/`, `utils/` and `api/` folders, each repo's log call shape, and each repo's catch-binding style.
+Inside these repos, this file and `.claude/rules/` override the global rules where they conflict: keep the existing `lib/`, `utils/` and `api/` folders, each repo's log call shape, each repo's catch-binding style, and the naming lexicons in `frontend-lexicon.md` and `backend-lexicon.md`.
 
 ## Repos
 
@@ -19,8 +19,8 @@ Inside these repos, this file and `.claude/rules/` override the global rules whe
 
 - `central-tech/reference/overview.md`, then `reference/tenancy.md`: the central map.
 - `central-tech/TODO.md` and `central-tech/parity/`: what the team has decided or is waiting on.
-- `personal-docs/feature-flows-index.md`: feature dossiers.
-- `personal-docs/local-development.md` and `personal-docs/start-local-stack.sh`: local stack.
+- Feature dossiers, local stack and deploy docs: Notion, links in `.claude/notion-docs.md` (needs the Notion MCP).
+- `personal-docs/`: `start-local-stack.sh` plus in-progress `/trace-feature` drafts only.
 
 ## Cross-repo invariants
 
@@ -62,4 +62,4 @@ Where code is mixed, follow the surrounding file.
 
 ## Skills
 
-`/trace-feature` (dossiers), `/spinquest-change` (implement a change), `/local-stack` (local stack and staging), `/mine-reviews` (refresh review norms).
+`/spec-kickoff` (spec, ticket and Figma to a kickoff brief and branch), `/trace-feature` (dossiers), `/spinquest-change` (implement a change), `/local-stack` (local stack and staging), `/mine-reviews` (refresh review norms).

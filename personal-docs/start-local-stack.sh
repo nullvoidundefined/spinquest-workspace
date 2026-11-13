@@ -14,7 +14,7 @@
 # First run creates Backend/.env and spinquest-frontend/.env from each repo's
 # .env.example plus the local overrides below. An existing .env is never edited.
 #
-# Full setup notes: local-development.md beside this script.
+# Full setup notes: Notion page "Running SpinQuest locally" (https://app.notion.com/p/417a274ca95d81d585afdd458875ddc7).
 
 # The workspace holds the Backend and spinquest-frontend checkouts. Resolution
 # order: SPINQUEST_WORKSPACE_DIR, the script's own folder, ~/Desktop/work/spinquest.

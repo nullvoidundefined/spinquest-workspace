@@ -4,7 +4,7 @@ WS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 RULES="$WS/.claude/rules"
 CHECKER="$WS/.claude/hooks/run/checkRules.mjs"
 CLAUDE_MD="$WS/CLAUDE.md"
-EXPECTED_RULES=(clients services backend spinquest-frontend mobile-app rips-frontend central-tech personal-docs)
+EXPECTED_RULES=(clients services backend spinquest-frontend mobile-app rips-frontend central-tech personal-docs frontend-lexicon backend-lexicon)
 failures=0
 REVIEW_SOURCE='source: PR reviews 2026-05-11 to 2026-11-11'
 
@@ -26,6 +26,8 @@ writeBrokenFixtures() { # <dir>
   printf -- '---\npaths:\n  - "Backend/**"\nsource: PR reviews 2026-05-11 to 2027-03-02\n---\n' > "$dir/later-date.md"
   printf -- '---\npaths:\n  - "Backend/**"\n%s\n---\n\n- Never X (aspirational).\n' "$REVIEW_SOURCE" > "$dir/meta-phrase.md"
   printf -- '---\npaths:\n  - "Backend/**"\n%s\n---\n\n- 37%% of files.\n' "$REVIEW_SOURCE" > "$dir/volatile-count.md"
+  printf -- '---\npaths:\n  - "Backend/**"\n%s\n---\n' "$REVIEW_SOURCE" > "$dir/review-source-lexicon.md"
+  printf -- '---\npaths:\n  - "Backend/**"\nsource: codebase naming survey 2026-11-12\n---\n' > "$dir/survey-lexicon.md"
 }
 
 checkCheckerCatchesProblems() {
@@ -39,7 +41,7 @@ checkCheckerCatchesProblems() {
     "NO_PROVENANCE $dir/no-provenance.md" "EM_DASH $dir/no-provenance.md" "TOO_LARGE $dir/too-large.md " \
     "MISSING_HEADING $dir/backend.md ## Verify ladder" "MISSING_HEADING $dir/backend.md ## Conventions" \
     "META_PHRASE $dir/meta-phrase.md" "META_PHRASE $dir/volatile-count.md" \
-    "NO_PROVENANCE $dir/nested/no-source.md"; do
+    "NO_PROVENANCE $dir/nested/no-source.md" "NO_PROVENANCE $dir/review-source-lexicon.md"; do
     if awk -v e="$expected" 'index($0, e) == 1 { found = 1 } END { exit !found }' <<< "$output"; then report PASS "checker/flags: ${expected%% *}"
     else report FAIL "checker/flags" "missing line: $expected"; fi
   done
@@ -47,6 +49,8 @@ checkCheckerCatchesProblems() {
   else report PASS "checker/present-heading-not-flagged"; fi
   if grep -qE '^NO_PROVENANCE .*/later-date\.md' <<< "$output"; then report FAIL "checker/later-date-passes" "later dates flagged"
   else report PASS "checker/later-date-passes"; fi
+  if grep -qE '^NO_PROVENANCE .*/survey-lexicon\.md' <<< "$output"; then report FAIL "checker/survey-lexicon-passes" "survey source flagged"
+  else report PASS "checker/survey-lexicon-passes"; fi
   rm -rf "$dir"
 }
 
