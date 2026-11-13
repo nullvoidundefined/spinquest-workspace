@@ -8,7 +8,6 @@ requireDeps advise citation-check jq node
 PAYLOAD="$(cat)"
 filePath="$(readFilePath)"
 case "$filePath" in
-  */personal-docs/feature-flows-index.md) exit 0 ;;
   */personal-docs/*.md) ;;
   *) exit 0 ;;
 esac
