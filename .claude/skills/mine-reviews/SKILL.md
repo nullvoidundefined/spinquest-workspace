@@ -5,7 +5,7 @@ description: Use to rerun the PR review mining for a date range and update the r
 
 # mine-reviews
 
-Input: optional `<since-ISO-date>`. Default: the end date in the frontmatter `source: PR reviews <start> to <end>` line of `.claude/rules/*.md`. Classification and data rules live in `specs/claude_rules/2026-11-11-spinquest-workspace-harness-design.md` ("Review-derived rules"); re-read it before step 4.
+Input: optional `<since-ISO-date>`. Default: the end date in the frontmatter `source: PR reviews <start> to <end>` line of `.claude/rules/*.md`.
 
 ## Steps
 
