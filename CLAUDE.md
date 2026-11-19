@@ -2,6 +2,8 @@
 
 Six independent git repos plus `personal-docs/`. Repo rules load from `.claude/rules/` when you touch that repo.
 
+On a new machine, clone this workspace and run `./bootstrap.sh` to clone the six repos. Copy `.env` files over by hand.
+
 Inside these repos, this file and `.claude/rules/` override the global rules where they conflict: keep the existing `lib/`, `utils/` and `api/` folders, each repo's log call shape, each repo's catch-binding style, and the naming lexicons in `frontend-lexicon.md` and `backend-lexicon.md`.
 
 ## Repos
