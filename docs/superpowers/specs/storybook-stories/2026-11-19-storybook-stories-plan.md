@@ -14,7 +14,7 @@ That is SB-00a to SB-03.
 - **Fixtures.** A fixture adapter on the shared `api` axios instance, installed in the global `beforeEach`, serves each story's `parameters.api`.
 - **State.** Presets seed zustand stores, and `withFlags` replaces `posthog.getFeatureFlag`.
 - **Story tests.** `@storybook/addon-vitest` runs every story in headless Chromium, with a11y in report-only mode.
-- **To-do list.** `UNSTORIED` holds the spec's 244-file appendix, and a small test keeps it honest.
+- **To-do list.** `UNSTORIED` holds the spec's 244-file appendix minus the 7 files that already have stories (237 entries), and a small test keeps it honest.
 - **CI and hosting.** Nothing runs in CI or deploys until SB-00c's evaluation. If it approves, Storybook gets its own path-filtered workflow and an nginx image.
 
 **Tech Stack:** Storybook 10.x (react-vite), `storybook/test`, `@storybook/addon-vitest` with Vitest browser mode (Playwright Chromium), React 18, MUI 5, TanStack Query, zustand 4.5, axios, i18next, Vitest 3. GitHub Actions and Docker/nginx only if SB-00c approves them.
@@ -30,6 +30,7 @@ That is SB-00a to SB-03.
   - `@storybook/addon-docs`, as a direct dependency.
   - `@storybook/addon-vitest` and the browser-mode provider its installer adds.
   - Nothing else, and never `msw`.
+  - Approval for the Storybook upgrade does not cover the addon-vitest packages (browser-mode provider, Playwright, possibly a Vitest upgrade). Before installing them, stop and present the exact list with license, maintenance and size for administrator approval (workspace invariant 10).
   - Play functions import from `storybook/test`.
 - **Env:**
   - Storybook reads only `.storybook/env/.env`, never the repo-root `.env`.
@@ -51,7 +52,7 @@ That is SB-00a to SB-03.
   - Shared fixtures go in `src/fixtures/<domain>`, typed with the real response types.
 - **Strings:** component text goes through i18n. Story-only labels may be literal.
 - **Repo conventions:** named exports (except Storybook `meta`), UPPER_SNAKE constants, and `interface` for props, named `<Name>Props`.
-- **PRs:** one PR per batch. Story PRs add at most 30 stories. Each batch has one Linear sub-issue under the Storybook parent issue.
+- **PRs:** one PR per batch. Every PR body states `**Risk:** standard`: nothing here touches auth, secrets, payments or data. Story PRs add at most 30 stories. Each batch has one Linear sub-issue under the Storybook parent issue.
 - **Before every PR:**
   - `pnpm lint` and `pnpm storybook:check` pass locally (Task 3, extended in Task 7). The output goes in the PR body.
   - No PR changes a CI or deploy workflow, except SB-00c after its evaluation approves it.
@@ -160,6 +161,7 @@ Branch: `chore/storybook-sb-00a`, from `main`. This PR fixes [SQ-1154](https://l
     - `mobile375`: `{ name: 'Mobile 375', styles: { width: '375px', height: '812px' } }`
 
 - [ ] **Step 1: Upgrade.**
+  - Run `pnpm dlx storybook@10 upgrade --dry-run` first, and present the resulting package list to the administrator. Install only what they approve.
   - Run `pnpm dlx storybook@10 upgrade`.
   - Accept its automigrations for 8 → 9 → 10. Decline any that add addons this plan doesn't list.
   - Pin every `storybook` and `@storybook/*` version exactly.
@@ -353,6 +355,7 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
 **Interfaces:**
 - Consumes: the preview annotations from Tasks 2, 5 and 6, and `takeFixtureMisses` from Task 4.
 
+- [ ] **Step 0: Get package approval.** List the packages `pnpm storybook add @storybook/addon-vitest` would add (browser-mode provider, Playwright, any Vitest bump) with license, maintenance and size. Stop until the administrator approves them.
 - [ ] **Step 1: Install and configure.** Follow the installer, then shape the configuration into the two projects above. `pnpm test` must keep running exactly the existing unit tests.
 - [ ] **Step 2: Run** `pnpm test:storybook`.
   - Expect PASS for the 7 existing stories and the locale check.

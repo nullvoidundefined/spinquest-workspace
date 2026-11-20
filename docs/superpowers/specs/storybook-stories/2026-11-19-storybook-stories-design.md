@@ -33,7 +33,7 @@ Nothing Storybook-related runs in CI or deploys until the evaluation approves it
 ## Goals
 
 - Storybook works without a backend, and never touches a real server, socket or analytics SDK.
-- Each of the 244 [listed components](#appendix-the-244-components) gets a story file beside it, covering its rows of the [story checklist](#story-checklist).
+- Each of the 244 [listed components](#appendix-the-244-components) ends up with a story file beside it, covering its rows of the [story checklist](#story-checklist). 7 of them already have a bare story, so `UNSTORIED` starts with 237 entries, and SB-01a and SB-01b bring those 7 up to the checklist.
 - `pnpm test:storybook` fails for any story that crashes or fails its interaction test. Accessibility violations are reported, never failing.
 - Nobody's builds or deploys get slower. Storybook stays out of CI and deploys until SB-00c approves it.
 - When Claude creates a new component, it asks whether to generate a story for it.
@@ -52,7 +52,8 @@ Nothing Storybook-related runs in CI or deploys until the evaluation approves it
   - **Added:** `@storybook/addon-docs`, which is a separate package on 10.x, and `@storybook/addon-vitest`, with the browser-mode provider its installer adds.
   - **Removed:** `addon-essentials`, `addon-actions`, `addon-links` and `node-logger`. Core covers them.
   - **Interaction API.** It comes from `storybook/test` in core.
-  - **No other package.** No MSW: the repo blocks it in `pnpm-workspace.yaml`.
+  - **Package approval.** The approval above covers the Storybook upgrade only. `@storybook/addon-vitest` pulls in more packages (the browser-mode provider, Playwright and a Chromium download, and possibly a Vitest upgrade). Under workspace invariant 10, SB-00a and SB-00b each stop before installing anything new and present the exact package list, with license, maintenance and size, for administrator approval.
+  - **Nothing beyond that list.** No MSW: the repo blocks it in `pnpm-workspace.yaml`.
 - **Storybook 10 requirements:**
   - ESM `main.ts`.
   - Node 20.19+ or 22.12+. `.nvmrc` pins 24.10.0.
@@ -65,7 +66,7 @@ Nothing Storybook-related runs in CI or deploys until the evaluation approves it
   - layouts at 320 and 375px
   - the longest locale
   - failed reads that show Retry
-- **PR size.** At most 30 stories per PR.
+- **PR size.** At most 30 stories per PR. The cap wins over batch size: a batch counts its stories from the [checklist](#story-checklist), and one that would exceed 30 is split in two. Layout-sensitive batches (SB-08, SB-18, SB-31, SB-34 and the modal-heavy ones) are the likely splits, because each such component takes 5–7 stories.
 
 ## Approaches considered
 
@@ -264,17 +265,17 @@ Every PR leaves the app working. Stories are additive, and nothing in the app im
 
 - **Dependencies.** Every batch depends only on SB-00a and SB-00b. Batch IDs are labels, not an order.
 - **Size and tracking.** A batch is one PR of at most 30 stories, with one Linear sub-issue.
-- **Flexible.** A batch can be split, merged, moved, paused part-way or skipped. The to-do list shows exactly what is left.
+- **Flexible.** A batch can be split, merged (never above the 30-story cap), moved, paused part-way or skipped. The to-do list shows exactly what is left.
 - **Shared fixtures.** A batch that needs a shared fixture creates it. Whichever batch lands second reuses it.
 
 ### Phase 0: setup
 
 | PR | Scope | Done when | Hours | Risk |
 |---|---|---|---|---|
-| SB-00a | **Set up Storybook.** Fixes SQ-1154. Upgrade to 10.x, pinned, with `@storybook/addon-docs`. `moduleResolution: "bundler"`. ESM `main.ts` with `react-docgen`, `staticDirs` and the placeholder env. `CoreProviders`, used by `AppProvider` and the preview. `storySort`. The `storybook:check` script. No CI changes | Storybook starts on 10.x. The 7 existing stories render with no env error. The static build contains no value from the root `.env` | 5–9 | Medium: a major upgrade, plus a `moduleResolution` change |
-| SB-00b | **Story tooling.** Fixture adapter, sign-in and flag presets, storage reset. Language dropdown and viewports. The Vitest addon, with a11y report-only. The to-do list and its test. `docs/storybook.md` rewritten | A missing fixture fails a story, naming the key. A German story renders German. The to-do list test passes | 6–9 | Medium: the first Vitest browser-mode setup |
-| SB-00c | **CI and hosting evaluation.** Measure locally, decide, and record the decision here. If approved: `storybook.yaml` and hosting. Best after the pilot | The decision is recorded. If approved, the new workflow is green | 2–4, plus DevOps | Medium: it adds to shared CI |
-| SB-00d | **Story prompt hook,** in the workspace repo | Creating a component prompts. Editing a file, creating a test and creating a story don't | 1–2 | Low |
+| SB-00a | **Set up Storybook.** Fixes SQ-1154. Upgrade to 10.x, pinned, with `@storybook/addon-docs`. `moduleResolution: "bundler"`. ESM `main.ts` with `react-docgen`, `staticDirs` and the placeholder env. `CoreProviders`, used by `AppProvider` and the preview. `storySort`. The `storybook:check` script. No CI changes | Storybook starts on 10.x. The 7 existing stories render with no env error. The static build contains no value from the root `.env` | 5–9 | Standard: a major upgrade, plus a `moduleResolution` change |
+| SB-00b | **Story tooling.** Fixture adapter, sign-in and flag presets, storage reset. Language dropdown and viewports. The Vitest addon, with a11y report-only. The to-do list and its test. `docs/storybook.md` rewritten | A missing fixture fails a story, naming the key. A German story renders German. The to-do list test passes | 6–9 | Standard: the first Vitest browser-mode setup |
+| SB-00c | **CI and hosting evaluation.** Measure locally, decide, and record the decision here. If approved: `storybook.yaml` and hosting. Best after the pilot | The decision is recorded. If approved, the new workflow is green | 2–4, plus DevOps | Standard: it adds to shared CI |
+| SB-00d | **Story prompt hook,** in the workspace repo | Creating a component prompts. Editing a file, creating a test and creating a story don't | 1–2 | Standard |
 
 ### Phase 1: UI tier and redeem pilot
 

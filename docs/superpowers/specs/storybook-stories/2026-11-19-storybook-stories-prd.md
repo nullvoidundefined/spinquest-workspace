@@ -6,7 +6,7 @@
 
 There's no easy way to see what our web components look like in every situation. Checking a loading state, an error message, a long German translation or a narrow phone screen means running the whole app locally and getting it into that state by hand. Edge cases often go unreviewed for that reason.
 
-Storybook is the tool for this, and it is already installed. But it covers only 7 small components, and it currently doesn't start.
+Storybook is the tool for this, and it is already installed. But it covers only 7 small components, and none of them currently render.
 
 ## What we're doing
 
@@ -91,13 +91,15 @@ These are estimates with an LLM coding agent, including review. The pilot replac
 
 - The to-do list shrinks batch by batch, and Linear shows the same progress.
 - The Storybook check passes on every Storybook pull request, and in CI once that's approved.
-- Design reviews link to Storybook pages instead of local screenshots.
+- Design reviews link to Storybook pages instead of local screenshots. This needs the hosted Storybook; until then, designers run it locally.
+- Of the pages built so far, how many have a loading, error and small-phone view where the checklist calls for one. The to-do list and story tests report this.
 - Every accessibility warning on a finished page has a ticket.
 
 ## Open questions
 
 | Question | Who decides | When |
 |---|---|---|
+| Do we approve the extra packages the browser checks need (a browser-mode provider, Playwright and a Chromium download)? | Administrator | Before the setup PRs install them |
 | Should Storybook run in CI and be hosted, given what it costs? | Engineering | After measuring it, best after the pilot |
 | If it's hosted, what is the internal URL, and how is access restricted? | DevOps | Once hosting is approved |
 | Should whole screens get pages? | Engineering and design | After the pilot, or once the batches are done |
