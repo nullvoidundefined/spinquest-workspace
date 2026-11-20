@@ -2,14 +2,19 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Upgrade Storybook to 10.x and make it run without a backend, with fake data, fixed sign-in state, a language dropdown, story tests in CI and internal hosting. Then cover the UI tier and the redeem pilot (SB-00a to SB-03).
+**Goal:** Upgrade Storybook to 10.x and make it run without a backend, with fake data, fixed sign-in state, a language dropdown and story tests. Then:
+- evaluate whether Storybook belongs in CI and hosting
+- add the hook that offers a story for each new component
+- cover the UI tier and the redeem pilot
+
+That is SB-00a to SB-03.
 
 **Architecture:**
 - **Providers.** The preview renders the app's side-effect-free `CoreProviders`, which `AppProvider` also uses.
 - **Fixtures.** A fixture adapter on the shared `api` axios instance, installed in the global `beforeEach`, serves each story's `parameters.api`.
 - **State.** Presets seed zustand stores, and `withFlags` replaces `posthog.getFeatureFlag`.
 - **Story tests.** `@storybook/addon-vitest` runs every story in headless Chromium, with a11y in report-only mode.
-- **To-do list.** A test builds the import graph and keeps the to-do list exact.
+- **To-do list.** `UNSTORIED` holds the spec's 244-file appendix, and a small test keeps it honest.
 - **Hosting.** Storybook is served from `main` as an nginx image.
 
 **Tech Stack:** Storybook 10.x (react-vite), `storybook/test`, `@storybook/addon-vitest` with Vitest browser mode (Playwright Chromium), React 18, MUI 5, TanStack Query, zustand 4.5, axios, i18next, Vitest 3, GitHub Actions, Docker/nginx.
@@ -28,12 +33,7 @@
 - **Env:**
   - Storybook reads only `.storybook/env/.env`, never the repo-root `.env`.
   - Its values are `VITE_APP_PRODUCT=casino`, `VITE_APP_ENABLE_SERVER_FLAGS=false`, `VITE_APP_ENABLE_POSTHOG=false`, `VITE_APP_ENABLE_SENTRY=false` and `VITE_APP_USE_MERCH_MOCKS=false`, plus a dummy value for every other key `src/config/env.ts` requires.
-- **Scope:**
-  - A component gets a story file when it is reachable from `src/main.tsx`, public, and not a screen. That is about 245 files.
-  - **Public** means imported from two or more files, from one file outside its own folder, or a top-level modal.
-  - **Screens** are route entries under `src/features`. They get no story, and their direct children count as public.
-  - **Private sub-pieces** are covered by their parent's stories.
-  - `UNSTORIED` (Task 8) lists exactly the files each batch must story.
+- **Scope:** the 244 files in the spec's appendix, grouped by batch. `UNSTORIED` (Task 8) holds the same list. New components are handled by the story prompt hook (Task 12).
 - **Story files:**
   - A story file sits beside its component and uses CSF3. `meta` sets `title` and `component`, and is the default export.
   - UI and Shared metas add `tags: ['autodocs']`.
@@ -50,11 +50,14 @@
 - **Strings:** component text goes through i18n. Story-only labels may be literal.
 - **Repo conventions:** named exports (except Storybook `meta`), UPPER_SNAKE constants, and `interface` for props, named `<Name>Props`.
 - **PRs:** one PR per batch. Story PRs add at most 30 stories. Each batch has one Linear sub-issue under the Storybook parent issue.
-- **Before every PR:** `pnpm lint`, `pnpm typecheck` and `pnpm storybook:build` pass. From SB-00b on, so do `pnpm test:storybook` and `pnpm vitest run --project=unit .storybook`.
+- **Before every PR:**
+  - `pnpm lint` and `pnpm storybook:check` pass locally (Task 3, extended in Task 7). The output goes in the PR body.
+  - No PR changes a CI or deploy workflow, except SB-00c after its evaluation approves it.
 
 ## Order, pausing and resuming
 
-- **SB-00a, then SB-00b.** After those, SB-00c, SB-01a, SB-01b, SB-02 and SB-03 each depend only on them, and can land in any order. SB-00c needs only SB-00a.
+- **SB-00a, then SB-00b.** After those, SB-00c, SB-00d, SB-01a, SB-01b, SB-02 and SB-03 each depend only on them, and can land in any order.
+- **SB-00c is best after the pilot,** so its measurements reflect a realistic story count.
 - **Every task ends in a commit that leaves `main` green.** Stopping between any two tasks is safe.
 - **Partial PRs.** A story PR may merge part of its batch. The rest stays in `UNSTORIED`.
 - **Resuming** means picking any batch whose files are still in `UNSTORIED`.
@@ -198,22 +201,16 @@ Branch: `chore/storybook-sb-00a`, from `main`. This PR fixes [SQ-1154](https://l
   - `chore(storybook): upgrade to Storybook 10` (Steps 1–2)
   - `chore(storybook): ESM config, placeholder env and story providers`
 
-### Task 3: CI job
+### Task 3: Local check script
 
-**Files:** Modify `.github/workflows/build.yaml`.
+**Files:** Modify `package.json`.
 
-- [ ] **Step 1: Add the `storybook` job.**
-  - `if: github.event_name == 'pull_request'`, `runs-on: ubuntu-latest`, `permissions: contents: read`.
-  - Steps:
-    1. Check out the PR head SHA, using the `build` job's pinned checkout action.
-    2. Set up Node 24 with `actions/setup-node`, and pnpm with `pnpm/action-setup`, both pinned as in `deploy-main.yaml`.
-    3. `pnpm install --frozen-lockfile`
-    4. `pnpm typecheck`
-    5. `pnpm storybook:build --test`
-- [ ] **Step 2: Verify.**
-  - Push the branch and open the SB-00a PR.
-  - Check that the `storybook` job is green, and put its run URL in the PR body.
-- [ ] **Step 3: Commit.** `ci(storybook): build Storybook and typecheck on pull requests`
+**Interfaces:**
+- Produces: the script `"storybook:check": "pnpm typecheck && pnpm storybook:build --test"`. Task 7 extends it.
+
+- [ ] **Step 1: Add the script.** No workflow file changes. CI wiring waits for SB-00c.
+- [ ] **Step 2: Run** `pnpm storybook:check`. Expect PASS. Paste the output, with its run time, in the SB-00a PR body.
+- [ ] **Step 3: Commit.** `chore(storybook): local storybook:check script`
 
 ---
 
@@ -232,22 +229,19 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
 - Produces:
   - `export type FixtureMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'`
   - `export type FixtureKey = \`${FixtureMethod} /${string}\``
-  - `export interface FixtureResponse { status?: number; data?: unknown; delay?: number | 'never' }`
+  - `export interface FixtureResponse { status?: number; data?: unknown; delay?: 'never' }`
   - `export const respond = (response: FixtureResponse): BrandedFixtureResponse`. The brand is a module-private symbol.
   - `export type ApiFixtures = Partial<Record<FixtureKey, unknown>>`
   - `export const createFixtureAdapter = (fixtures: ApiFixtures): AxiosAdapter`
   - `export const installFixtureAdapter = (fixtures: ApiFixtures): (() => void)`. It swaps `api.defaults.adapter` (`api` from `@/lib/api/api-client`) and returns the restore function.
   - `export const takeFixtureMisses = (): string[]`. It returns the keys of unmatched requests since the last call, and clears them.
-- Key rules:
-  - A request's key is `METHOD + ' ' + pathname`. The pathname comes from `axios.getUri(config)`, with `baseURL` and the query string removed.
-  - A fixture key containing `?` matches the pathname plus query exactly, and is tried first.
+- Key rule: a request's key is `METHOD + ' ' + pathname`. The pathname comes from `axios.getUri(config)`, with `baseURL` and the query string removed.
 
 - [ ] **Step 1: Write the failing tests.** In `describe('createFixtureAdapter')`:
   - `it('resolves a plain value with status 200 and the value as data')`
   - `it('treats a plain body with its own status field as data')`: the fixture `{ id: 'r1', status: 'PENDING' }` resolves with `response.status === 200` and `response.data.status === 'PENDING'`.
   - `it('rejects with an AxiosError carrying status and data for respond({ status: 422, data })')`
-  - `it('matches a ?query key exactly before the bare path')`
-  - `it('ignores the query string for a bare-path key')`
+  - `it('ignores the query string')`
   - `it('never settles for delay: "never"')`: race it against a 50 ms timer, and the timer wins.
   - `it('rejects an unmatched request and logs console.error naming "GET /users/me"')`
   - `it('records the miss for takeFixtureMisses and clears it after reading')`
@@ -332,7 +326,7 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
 - [ ] **Step 5: Run** the tests and `pnpm storybook:build`. Expect PASS.
 - [ ] **Step 6: Commit.** `feat(storybook): language dropdown from the app's language list`
 
-### Task 7: Story tests and CI
+### Task 7: Story tests
 
 **Files:**
 - Install: run `pnpm storybook add @storybook/addon-vitest`. It adds the addon, the browser-mode provider, `.storybook/vitest.setup.ts` and a test project.
@@ -342,10 +336,7 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
     - `storybook`: `storybookTest({ configDir: '.storybook' })`, in browser mode with headless Chromium.
   - `package.json` scripts: `"test": "vitest run --project=unit"` and `"test:storybook": "vitest run --project=storybook"`.
   - `.storybook/preview.tsx`: `parameters.a11y.test: 'todo'`.
-  - `.github/workflows/build.yaml`: the `storybook` job runs these after the build:
-    1. `pnpm exec playwright install --with-deps chromium`
-    2. `pnpm test:storybook`
-    3. `pnpm vitest run --project=unit .storybook`
+  - `package.json`: `storybook:check` becomes `pnpm typecheck && pnpm storybook:build --test && pnpm test:storybook && pnpm vitest run --project=unit .storybook`. No workflow file changes.
 
 **Interfaces:**
 - Consumes: the preview annotations from Tasks 2, 5 and 6, and `takeFixtureMisses` from Task 4.
@@ -371,67 +362,28 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
 ### Task 8: The to-do list
 
 **Files:**
-- Create:
-  - `.storybook/import-graph.ts`
-  - `.storybook/unstoried.ts`
-- Test:
-  - `.storybook/import-graph.test.ts`
-  - `.storybook/unstoried.test.ts`
+- Create: `.storybook/unstoried.ts`
+- Test: `.storybook/unstoried.test.ts`
 
 **Interfaces:**
-- Produces, in `.storybook/import-graph.ts`:
-  - `buildImportGraph(sources: Record<string, string>): Map<string, Set<string>>`. It maps each file to the files it imports.
-    - It covers static `import` and `export … from`, and dynamic `import()`.
-    - It resolves `@/` and relative specifiers, including `index.ts(x)`, and looks through `index.ts` barrels.
-    - It adds both `product-lobby-hero` variants for the alias in `vite.config.ts`.
-  - `reachableFrom(entry: string, graph): Set<string>`
-  - `findScreens(sources: Record<string, string>, graph): Set<string>`. It returns the `.tsx` files under `src/features` that a `route.factory.ts(x)` or `src/app/routes/index.tsx` loads with `import()`.
-  - `isInScope(file: string, graph, screens: Set<string>): boolean`. The file is reachable, is not a screen, and is public.
-    - **Public:** imported from two or more files, or from one file outside its parent folder, or from a screen.
-    - **Private:** a file with exactly one importer, where that importer is not a screen and sits in the same folder or under the file's parent folder.
-- Produces, in `.storybook/unstoried.ts`:
+- Produces:
   - `export type BatchId = \`SB-${string}\``
-  - `export const UNSTORIED: Record<BatchId, readonly string[]>`. In-scope files without a story, grouped by the spec's batch IDs (`SB-01a` to `SB-35`).
-  - `export const NOT_STORIED: Record<string, string>`. Each path maps to its reason: the spec's non-visual files, skeletons, loaders, wrappers and icon sets.
-  - `export const COVERED_BY: Record<string, string>`. Each path maps to the story file that covers it, for example a `mobile.tsx` and its pair.
-- Rules:
-  - **Component file:** a `.tsx` under `src/components` or `src/features` that is not `*.test.tsx`, `*.stories.tsx` or `styles.tsx`.
-  - **Storied:** `<folder>/<basename>.stories.tsx` exists, or the file is a key in `COVERED_BY`.
-  - **Source text:** the test reads every source file with `import.meta.glob('/src/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true })`.
+  - `export const UNSTORIED: Record<BatchId, readonly string[]>`. It holds the spec's appendix, keyed `SB-01a` to `SB-36`, with paths relative to the repo root (`src/...`).
 
-- [ ] **Step 1: Write the graph tests.** In `describe('import graph')`:
-  - `it('resolves @/ and relative specifiers and index barrels')`
-  - `it('follows dynamic import() for reachability')`
-  - `it('treats a file imported only by a sibling as private')`
-  - `it('treats a file imported from two files as public')`
-  - `it('treats a file imported only from another feature folder as public')`
-  - `it('treats a route entry under src/features as a screen and leaves it out')`
-  - `it('treats a screen's direct child as public')`
-- [ ] **Step 2: Write the list tests,** each naming the offending path:
-  - `it('every in-scope file is storied or listed')`
-  - `it('no file in UNSTORIED already has a story')`
+- [ ] **Step 1: Write the tests:**
   - `it('every listed path exists')`
-  - `it('no path appears in more than one list')`
+  - `it('no listed path already has a story beside it')`. The story is `<folder>/<basename>.stories.tsx`.
+  - `it('no path is listed twice')`
 
-  The test also prints how many private, unreachable and screen files it left out.
-- [ ] **Step 3: Run** `pnpm vitest run --project=unit .storybook`. Expect FAIL.
-- [ ] **Step 4: Implement** `import-graph.ts`.
-- [ ] **Step 5: Seed `unstoried.ts`.**
-  - Generate the in-scope list once, and group it by the spec's batch tables.
-  - The 7 existing stories stay out of it.
-  - Run the tests. Expect PASS.
-- [ ] **Step 6: Prove it fails when it should (G1).** Add a throwaway `src/components/ui/spinner/probe.tsx`, then check four cases:
-  1. Import it from both `spinner.tsx` and `switch.tsx`. Expect FAIL, naming `probe.tsx`.
-  2. Import it from `spinner.tsx` only. Expect PASS, because it is private.
-  3. Import it from nothing. Expect PASS, because it is unreachable.
-  4. Add a story beside a listed file. Expect FAIL, naming that file.
-
-  Revert everything.
-- [ ] **Step 7: Report the counts and orphans.**
-  - Put the in-scope, private, screen and unreachable counts in the PR body, beside the spec's 2026-11-19 scan.
-  - File a dead-code ticket for each unreachable file that isn't a parked landing variant.
-- [ ] **Step 8: Commit.** `test(storybook): enforced to-do list of components without stories`
-
+  Each failure message names the path. The test lists existing files with `Object.keys(import.meta.glob('/src/**/*.tsx'))`, which imports nothing.
+- [ ] **Step 2: Run** `pnpm vitest run --project=unit .storybook/unstoried.test.ts`. Expect FAIL, because the module isn't found.
+- [ ] **Step 3: Write `unstoried.ts`** from the spec's appendix. Leave out the 7 files that already have stories. Run the test again. Expect PASS.
+- [ ] **Step 4: Prove it fails (G1).**
+  - Add a story beside a listed file. Expect FAIL, naming the file.
+  - Add a listed path that doesn't exist. Expect FAIL.
+  - Revert both.
+- [ ] **Step 5: File a dead-code ticket** for each of the 7 orphaned files the spec names.
+- [ ] **Step 6: Commit.** `test(storybook): to-do list of components without stories`
 ### Task 9: Developer docs
 
 **Files:** Rewrite `docs/storybook.md`.
@@ -445,40 +397,114 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
 
 ---
 
-## PR SB-00c: hosting
+## PR SB-00c: CI and hosting evaluation
 
-Branch: `chore/storybook-sb-00c`, from `main` after SB-00a merges.
+Branch: `chore/storybook-sb-00c`, from `main` after SB-00b merges, and best after the pilot (SB-02 and SB-03). Until this PR's decision, no CI or deploy workflow runs anything Storybook-related.
 
-### Task 10: Storybook image from `main`
+### Task 10: Measure and decide
+
+**Files:** Modify, in the workspace repo, `docs/superpowers/specs/storybook-stories/2026-11-19-storybook-stories-design.md`, the "CI and deploys" section.
+
+- [ ] **Step 1: Measure locally.**
+  - Time a cold and a warm run of each:
+    - `pnpm storybook:build --test`
+    - `pnpm exec playwright install chromium`
+    - `pnpm test:storybook`
+  - Record the story count.
+- [ ] **Step 2: Compare with the `build` job.**
+  - Get the median duration of recent PR runs with `gh run list --workflow build.yaml --event pull_request --json createdAt,updatedAt`.
+  - Note that CI runners are slower than a laptop. Allow about twice the local time.
+- [ ] **Step 3: Project** the story-test time to the full rollout (about 1,000 stories), linearly by story count.
+- [ ] **Step 4: Record the decision in the spec.** It covers:
+  - whether PRs get a Storybook check
+  - whether Storybook is hosted
+
+  Put the measurements in the PR body.
+- [ ] **Step 5: Commit** in the workspace repo. `docs(specs): record the Storybook CI decision`
+### Task 11: Wire what was approved
+
+Do this task only for what Task 10 approved. Skip whatever it didn't.
 
 **Files:**
-- Create: `Dockerfile.storybook`
-- Modify:
-  - `.github/workflows/build.yaml`
-  - `.dockerignore`, only if it excludes `storybook-static`
+- Create:
+  - `.github/workflows/storybook.yaml`. Never `build.yaml` or the deploy workflows.
+  - `Dockerfile.storybook`, if hosting was approved.
+- Modify: `.dockerignore`, only if it excludes `storybook-static`.
 
-- [ ] **Step 1: Write `Dockerfile.storybook`.**
+- [ ] **Step 1: Add the PR job, if approved.**
+  - `on: pull_request` with the approved `paths` filters (at least `src/**`, `public/locales/**`, `.storybook/**`, `package.json` and `pnpm-lock.yaml`), `runs-on: ubuntu-latest`, `permissions: contents: read`.
+  - Steps: the pinned checkout, Node 24 and pnpm, then `pnpm install --frozen-lockfile`, `pnpm exec playwright install --with-deps chromium` and `pnpm storybook:check`.
+- [ ] **Step 2: Write `Dockerfile.storybook`, if hosting was approved.**
   - `FROM nginxinc/nginx-unprivileged:1.28.0-alpine`, the app's base image.
   - `COPY storybook-static /frontend`, then `COPY default.conf /etc/nginx/conf.d/default.conf`.
   - `EXPOSE 8080`.
-- [ ] **Step 2: Add the `storybook-image` job.**
-  - `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`, with `permissions: contents: read, packages: write`.
+- [ ] **Step 3: Add the image job, if hosting was approved.**
+  - `on: push` to `main`, with the same `paths` filters, and `permissions: contents: read, packages: write`.
   - Steps:
-    1. Checkout.
-    2. Node 24 and pnpm, pinned as in Task 3.
-    3. `pnpm install --frozen-lockfile`
-    4. `pnpm storybook:build`
-    5. `docker/login-action` and `docker/metadata-action`, pinned as in the `build` job.
-    6. `docker/build-push-action`, with `file: Dockerfile.storybook`, image `${{ env.REGISTRY }}/${{ github.repository }}-storybook`, and tags `type=raw,value=sha-{{sha}}` and `type=raw,value=latest`.
-  - The build step uses no secrets.
-- [ ] **Step 3: Verify locally.**
-  - Run `pnpm storybook:build && docker build -f Dockerfile.storybook -t storybook-local . && docker run --rm -p 8080:8080 storybook-local`.
-  - Open `http://localhost:8080`, check that Storybook loads, then stop the container.
-- [ ] **Step 4: Write the DevOps ticket in the PR body.** It asks for:
+    1. the pinned checkout, Node 24 and pnpm
+    2. `pnpm install --frozen-lockfile`
+    3. `pnpm storybook:build`
+    4. `docker/login-action` and `docker/metadata-action`, pinned as in `build.yaml`
+    5. `docker/build-push-action`, with `file: Dockerfile.storybook`, image `${{ env.REGISTRY }}/${{ github.repository }}-storybook`, and tags `type=raw,value=sha-{{sha}}` and `type=raw,value=latest`
+  - No secrets in the build step.
+- [ ] **Step 4: Verify.**
+  - Open the PR and check the `storybook` job is green.
+  - If hosting was approved, run `pnpm storybook:build && docker build -f Dockerfile.storybook -t storybook-local . && docker run --rm -p 8080:8080 storybook-local`, and check that `http://localhost:8080` loads.
+- [ ] **Step 5: Write the DevOps ticket, if hosting was approved.** Put the text in the PR body. It asks for:
   - an Argo application for `ghcr.io/<org>/spinquest-frontend-storybook:latest` on port 8080
   - an ingress at the agreed dev host (proposed: `storybook.dev.spinquest.com`)
   - access restricted like the other dev hosts, with no public access
-- [ ] **Step 5: Commit.** `ci(storybook): publish the Storybook image from main`
+- [ ] **Step 6: Commit.** `ci(storybook): run approved Storybook checks in their own workflow`
+
+---
+
+## PR SB-00d: story prompt hook
+
+**Repo:** the workspace repo, `spinquest-workspace`, not spinquest-frontend. Paths in this section are relative to the workspace root. Branch: `chore/story-prompt-hook`, after SB-00b merges in spinquest-frontend.
+
+### Task 12: `story-prompt.sh`
+
+**Files:**
+- Create:
+  - `.claude/hooks/story-prompt.sh`
+  - `.claude/hooks/fixtures/story-prompt/`
+- Modify: `.claude/settings.json`. Add the hook to the existing `PostToolUse` entry whose matcher is `Edit|Write|MultiEdit`.
+
+**Interfaces:**
+- Consumes: `run/payload.sh` (`readToolName`, `readFilePath`) and `run/emit.sh` (`emitContext`, `requireDeps`), like `style-scan.sh` does.
+- Behaviour:
+  1. Exit 0 with no output unless all of these hold:
+     - The tool is `Write`.
+     - The file was created: `.tool_response.type == "create"`.
+     - The path is under `spinquest-frontend/src/components/` or `spinquest-frontend/src/features/`, and ends in `.tsx`.
+     - It is not a `*.test.tsx`, `*.stories.tsx`, `styles.tsx`, `route.factory.tsx`, `use-*.tsx` or `*.config.tsx` file.
+     - No `<basename>.stories.tsx` exists beside it.
+  2. Call `emitContext PostToolUse` with exactly this text, where `<path>` is relative to `spinquest-frontend`:
+
+     > [story-prompt] New component `<path>` has no Storybook story. Ask the user whether to generate one now. If yes, write `<basename>.stories.tsx` beside it, following `spinquest-frontend/docs/storybook.md` and the story checklist. If no, add the file to `UNSTORIED` in `spinquest-frontend/.storybook/unstoried.ts`, under the batch for its folder. If it is a private sub-piece (imported by only one file in its own folder) or a screen (lazy-loaded by a `route.factory`), tell the user that no story is needed.
+
+- [ ] **Step 1: Check where hooks load.**
+  - Start a Claude Code session in `spinquest-frontend`, and have it create a scratch `.ts` file.
+  - Confirm the `Write` payload's `tool_response` has a `type` of `create`. If it doesn't, stop and report: the hook relies on it.
+  - Check whether the workspace's `style-scan.sh` adds context.
+  - If it doesn't, the workspace hooks don't load there. In that case, build this hook in the `claude-skills` repo instead, as a hook in the team plugin, with the same behaviour and fixtures, and record that in the spec.
+- [ ] **Step 2: Write the fixtures** in `fixtures/story-prompt/`, using `__WS__` paths:
+  - `warn-new-component.json`: a `Write` with `tool_response.type: "create"` to `spinquest-frontend/src/features/demo/components/demo-card/index.tsx`. Its `.expect` file holds `story-prompt` and `demo-card/index.tsx`.
+  - `pass-update.json`: the same, with `type: "update"`.
+  - `pass-test-file.json`, `pass-stories-file.json`, `pass-styles-file.json`, `pass-route-factory.json` and `pass-hook-file.json`, one for each excluded name.
+  - `pass-has-story.json`: a create of `spinquest-frontend/src/components/ui/switch/switch.tsx`, which has a story beside it.
+  - `pass-outside-frontend.json`: a create under `Backend/src/`.
+  - `pass-edit.json`: an `Edit` of a new path.
+- [ ] **Step 3: Run** `.claude/hooks/test-hooks.sh`. Expect the story-prompt fixtures to FAIL, because the script doesn't exist yet.
+- [ ] **Step 4: Write `story-prompt.sh`.**
+  - Start it with `requireDeps advise story-prompt jq`.
+  - Make it executable.
+  - Wire it in `settings.json`.
+- [ ] **Step 5: Run** `.claude/hooks/test-hooks.sh` and `.claude/hooks/test-settings.sh`. Expect PASS.
+- [ ] **Step 6: Check it by hand.**
+  - In a Claude Code session, ask for a new component.
+  - Expect Claude to ask about a story. Expect no question when it rewrites that file, or when it creates a test.
+- [ ] **Step 7: Commit.** `feat(hooks): offer a Storybook story for new frontend components`
 
 ---
 
@@ -486,8 +512,8 @@ Branch: `chore/storybook-sb-00c`, from `main` after SB-00a merges.
 
 There are two PRs, each branched from `main` after SB-00b merges, and they can land in either order:
 
-- **SB-01a**, Task 11: leaves, about 25 stories, on `chore/storybook-sb-01a`.
-- **SB-01b**, Task 12: behaviour, about 25 stories, on `chore/storybook-sb-01b`.
+- **SB-01a**, Task 13: leaves, about 25 stories, on `chore/storybook-sb-01a`.
+- **SB-01b**, Task 14: behaviour, about 25 stories, on `chore/storybook-sb-01b`.
 
 Each story file is titled `UI/<Name>`. The 7 existing story files are brought up to the conventions in place.
 
@@ -507,19 +533,19 @@ Each story file is titled `UI/<Name>`. The 7 existing story files are brought up
 | `tabs/tabs.tsx` | SB-01b | play: clicking the second tab shows its panel, and ArrowRight moves focus |
 | `swiper-slider/index.tsx` (covers its navigation buttons) | SB-01b | play: next and previous move the slide; plus `Mobile320` |
 
-### Task 11: UI leaves (SB-01a)
+### Task 13: UI leaves (SB-01a)
 
 - [ ] **Step 1: Write the stories** for the SB-01a rows.
 - [ ] **Step 2: Remove from the to-do list.** Delete `UNSTORIED['SB-01a']`.
-- [ ] **Step 3: Run** `pnpm test:storybook`, `pnpm vitest run --project=unit .storybook`, `pnpm lint` and `pnpm typecheck`. Expect PASS. Ticket any a11y violation inside a component.
+- [ ] **Step 3: Run** `pnpm lint` and `pnpm storybook:check`. Expect PASS. Ticket any a11y violation inside a component, and paste the check output in the PR body.
 - [ ] **Step 4: Commit and open the PR.** `docs(storybook): UI tier stories, leaves`
 
-### Task 12: UI behaviour (SB-01b)
+### Task 14: UI behaviour (SB-01b)
 
 - [ ] **Step 1: Write the stories and play functions** for the SB-01b rows.
 - [ ] **Step 2: Prove a play function can fail (G1).** In `switch.stories.tsx`, temporarily assert that `checked` is `false` after the click. Expect `pnpm test:storybook` to FAIL. Revert.
 - [ ] **Step 3: Remove from the to-do list.** Delete `UNSTORIED['SB-01b']`.
-- [ ] **Step 4: Run** the four checks from Task 11, Step 3. Expect PASS, and ticket any a11y violations.
+- [ ] **Step 4: Run** the checks from Task 13, Step 3. Expect PASS, and ticket any a11y violations.
 - [ ] **Step 5: Commit and open the PR.** `docs(storybook): UI tier stories, behaviour`
 
 ---
@@ -528,7 +554,7 @@ Each story file is titled `UI/<Name>`. The 7 existing story files are brought up
 
 Branch: `chore/storybook-sb-02`, from `main` after SB-00b merges.
 
-### Task 13: Redeem fixtures and stories
+### Task 15: Redeem fixtures and stories
 
 **Files:**
 - Create:
@@ -569,7 +595,7 @@ Branch: `chore/storybook-sb-02`, from `main` after SB-00b merges.
   - **`verification-checks`** gets one story per verification state.
   - **Batch size.** If the batch passes 30 stories, split it into SB-02a and SB-02b. Each removes its own files from `UNSTORIED`.
 - [ ] **Step 4: Remove from the to-do list.** Delete `UNSTORIED['SB-02']`.
-- [ ] **Step 5: Run** the four checks from Task 11, Step 3. Expect PASS, and ticket any a11y violations.
+- [ ] **Step 5: Run** the checks from Task 13, Step 3. Expect PASS, and ticket any a11y violations.
 - [ ] **Step 6: Commit and open the PR.** `docs(storybook): redeem component stories`
 
 ---
@@ -578,7 +604,7 @@ Branch: `chore/storybook-sb-02`, from `main` after SB-00b merges.
 
 Branch: `chore/storybook-sb-03`, from `main` after SB-00b merges. If SB-02 hasn't merged, this batch creates the `src/fixtures/wallet` constants it needs, and whichever batch lands second reuses them.
 
-### Task 14: Redemption dialog stories
+### Task 16: Redemption dialog stories
 
 **Files:**
 - Create: one story file beside each file in `UNSTORIED['SB-03']`, titled `Features/Wallet/<Name>`. These are the in-scope files in `src/features/wallet/components/redemptions/`:
@@ -588,7 +614,7 @@ Branch: `chore/storybook-sb-03`, from `main` after SB-00b merges. If SB-02 hasn'
   - `redemption-form-shared`
 
 **Interfaces:**
-- Consumes: `src/fixtures/wallet` (from Task 13, or created here), `signedIn` and `respond`.
+- Consumes: `src/fixtures/wallet` (from Task 15, or created here), `signedIn` and `respond`.
 
 - [ ] **Step 1: Map the requests** for `redemptions/`, and add any missing fixtures to `src/fixtures/wallet`.
 - [ ] **Step 2: Write the stories.** Every story uses `beforeEach: [signedIn]`.
@@ -598,7 +624,7 @@ Branch: `chore/storybook-sb-03`, from `main` after SB-00b merges. If SB-02 hasn'
   - **`redemption-response-dialog`** gets one story per response outcome.
   - **`payment-details` and `redemption-form-shared`** are leaves.
 - [ ] **Step 3: Remove from the to-do list.** Delete `UNSTORIED['SB-03']`.
-- [ ] **Step 4: Run** the four checks from Task 11, Step 3. Expect PASS, and ticket any a11y violations.
+- [ ] **Step 4: Run** the checks from Task 13, Step 3. Expect PASS, and ticket any a11y violations.
 - [ ] **Step 5: Commit and open the PR.** `docs(storybook): redemption dialog stories`
 - [ ] **Step 6: Record the pilot's numbers for the go/no-go.** In the last pilot PR's body, record:
   - hours per PR

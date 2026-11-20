@@ -10,7 +10,7 @@
 
 **Tech Stack:** Node (ESM, no dependencies, `node:test`), Claude Code plugin markdown (agents, skills, `hooks/hooks.json`).
 
-**Spec:** `/Users/iangreenough/Desktop/work/spinquest/docs/superpowers/specs/2026-11-17-review-crew-resource-caps-design.md`
+**Spec:** [2026-11-17-review-crew-resource-caps-design.md](./2026-11-17-review-crew-resource-caps-design.md)
 
 **Repo:** `/Users/iangreenough/Desktop/work/spinquest/claude-skills`, branch `review-crew-resource-caps` off `main` (`b69e9fb`). Commit subjects follow the repo's plain-sentence style (`Run review-crew fixes in the background`), no conventional prefix.
 

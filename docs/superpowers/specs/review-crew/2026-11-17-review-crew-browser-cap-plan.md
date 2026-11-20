@@ -8,7 +8,7 @@
 
 **Tech Stack:** Claude Code plugin markdown.
 
-**Spec:** `/Users/iangreenough/Desktop/work/spinquest/docs/superpowers/specs/2026-11-17-review-crew-browser-cap-design.md`
+**Spec:** [2026-11-17-review-crew-browser-cap-design.md](./2026-11-17-review-crew-browser-cap-design.md)
 
 **Repo:** `/Users/iangreenough/Desktop/work/spinquest/claude-skills`, new branch `review-crew-browser-cap` cut from `origin/review-crew-mutation-worktree-sha` (BetsphereORG/claude-skills#21), in its own worktree under `~/Desktop/work/worktrees/`. One commit, plain-sentence subject, like the repo's other commits.
 

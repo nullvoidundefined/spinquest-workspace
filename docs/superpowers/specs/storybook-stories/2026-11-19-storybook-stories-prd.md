@@ -10,7 +10,7 @@ Storybook is the tool for this, and it is already installed. But it covers only 
 
 ## What we're doing
 
-We'll upgrade Storybook to the current version and give each component that matters its own page there, showing its states side by side. A component "matters" when the app actually uses it, and when it's either reused or the main piece of a feature. That's about 245 pages and 750–1,000 stories.
+We'll upgrade Storybook to the current version and give each component that matters its own page there, showing its states side by side. A component "matters" when the app actually uses it, and when it's either reused or the main piece of a feature. That's about 244 pages and 750–1,000 stories.
 
 Some things don't get a page of their own:
 
@@ -32,7 +32,8 @@ The toolbar has a **language dropdown** that switches every page to any of our 1
 
 - **Designers** see every state of a component (normal, loading, error, empty, small phone, any language) without asking an engineer to set it up.
 - **Engineers** build and change UI without running the backend, against realistic fake data that is the same every time.
-- **Everyone** gets automatic checks. CI renders every page in a real browser, and interactive components test their own behaviour. An accessibility check runs on every page and reports problems without blocking the pull request.
+- **Everyone** gets automatic checks. A Storybook check renders every page in a real browser, and interactive components test their own behaviour. Developers run it before opening a pull request. An accessibility check runs on every page and reports problems without blocking.
+- **Whoever adds a component** is asked, when Claude creates it, whether to generate its Storybook page straight away.
 
 ## What "done" looks like for each component
 
@@ -49,8 +50,10 @@ Each accessibility warning inside a component gets a ticket.
 
 - Every in-use component that is reusable or a feature's main piece has a Storybook page.
 - Storybook works without a backend and never talks to real servers.
-- A page that crashes, or whose interaction test fails, blocks the pull request.
-- The latest Storybook is always available at one internal link, so nobody needs to run it locally to review.
+- A page that crashes, or whose interaction test fails, fails the Storybook check.
+- Nobody's builds or deploys get slower. Storybook stays out of CI and deploys until we've measured what it would cost.
+- If that measurement says yes, the latest Storybook is always available at one internal link, so nobody needs to run it locally to review.
+- New components get a page from the start.
 - The approach is proven on one real flow before we commit to the rest.
 
 ## Not in scope
@@ -64,29 +67,30 @@ Each accessibility warning inside a component gets a ticket.
 
 The work is a short setup, a pilot, then independent batches. Each batch is one small pull request of at most 30 stories, with one Linear ticket. Batches can go in any order, wait, or be skipped, and stopping after any pull request leaves everything working. A checked-in to-do list, enforced by a test, always shows exactly what's left.
 
-1. **Setup (three pull requests):**
-   - Upgrade Storybook and get it starting and building in CI.
-   - Add the fake-data layer, the language dropdown, the small-phone view and the browser checks.
-   - Publish it from `main` to an internal link on our own dev infrastructure. This needs a small piece of DevOps work. We chose our own infrastructure over Chromatic, a paid hosting service, because Chromatic's main feature is screenshot comparison, which we aren't doing.
+1. **Setup:**
+   - Upgrade Storybook and get it starting again.
+   - Add the fake-data layer, the language dropdown, the small-phone view and the browser checks, which developers run locally.
+   - Add a Claude prompt that offers a Storybook page whenever a new component is created.
+   - Later, best after the pilot: measure what Storybook would cost in CI. If it's worth it, add a separate check that only runs when components change, and publish Storybook from `main` to an internal link on our own dev infrastructure. Publishing needs a small piece of DevOps work. We chose our own infrastructure over Chromatic, a paid hosting service, because Chromatic's main feature is screenshot comparison, which we aren't doing.
 2. **UI shelf.** Two pull requests.
 3. **Pilot: the redeem flow.** Two pull requests covering the redemption components and the redemption dialog. This tests the whole approach on a real, data-heavy flow.
 4. **Go/no-go.** Review what the pilot cost and delivered, and adjust the plan with real numbers.
-5. **Shared and Features shelves.** 31 batches, starting with the shared building blocks and the money paths: lobby, shop, merch store and sign-in.
+5. **Shared and Features shelves.** 32 batches, starting with the shared building blocks and the money paths: lobby, shop, merch store and sign-in.
 
 ## Effort
 
 | Stage | Engineer days |
 |---|---|
-| Setup and pilot | 4.5–6 |
+| Setup and pilot | 5–6.5 |
 | Each later batch | about 0.3 |
-| All 31 later batches | 8–13 |
+| All 32 later batches | 8–13 |
 
 These are estimates with an LLM coding agent, including review. The pilot replaces them with measured numbers.
 
 ## How we'll know it worked
 
 - The to-do list shrinks batch by batch, and Linear shows the same progress.
-- The Storybook check passes in CI on every pull request.
+- The Storybook check passes on every Storybook pull request, and in CI once that's approved.
 - Design reviews link to Storybook pages instead of local screenshots.
 - Every accessibility warning on a finished page has a ticket.
 
@@ -94,7 +98,8 @@ These are estimates with an LLM coding agent, including review. The pilot replac
 
 | Question | Who decides | When |
 |---|---|---|
-| What is the internal Storybook URL, and how is access restricted? | DevOps | Before the hosting pull request |
+| Should Storybook run in CI and be hosted, given what it costs? | Engineering | After measuring it, best after the pilot |
+| If it's hosted, what is the internal URL, and how is access restricted? | DevOps | Once hosting is approved |
 | Should whole screens get pages? | Engineering and design | After the pilot, or once the batches are done |
 | Should each pull request get its own Storybook preview link? | Engineering and DevOps | After the hosted Storybook is live |
 | Should the cards product get its own Storybook? It currently shows the casino look. | Product and engineering | Later; it doesn't block anything |
