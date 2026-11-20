@@ -69,7 +69,7 @@ Branch: `chore/modal-phase-0-ci-harness`, from `main`. No product code changes.
   - `vite.config.ts`: `test.env` uses `loadEnv(mode, process.cwd(), '')`, so `vitest --mode ci` reads `.env.ci`.
   - `playwright.config.ts`: add a `webServer` running `cross-env VITE_APP_PRODUCT=casino vite --mode ci --port 3001 --strictPort`, with `reuseExistingServer: !process.env.CI`.
   - `package.json` scripts:
-    - `"test:ci": "vitest run --mode ci --exclude '.storybook/**'"`. Storybook's tests stay out of CI until its evaluation (SB-00c in the Storybook spec) decides.
+    - `"test:ci": "vitest run --mode ci"`
     - `"test:e2e:ci": "playwright test --grep @mocked"`
   - `.github/workflows/build.yaml`: a new job (see Step 6).
 
@@ -413,10 +413,3 @@ Branch: `fix/modal-notifications-queue`, from `main` after PR 3 merges. This is 
   - The PR body lists the QA rows it re-checked: **Queue** and **Mixed state**.
   - By hand on staging: an in-game purchase shows its result inside the game.
 
----
-
-## Coordination
-
-- **Storybook spec.** The [Storybook spec](../storybook-stories/2026-11-19-storybook-stories-design.md) keeps Storybook out of every CI and deploy workflow until its SB-00c evaluation decides. If that evaluation approves CI checks, they go in their own `storybook.yaml` workflow, never in this plan's `test` job. Until then, `test:ci` leaves `.storybook/**` out.
-- **Placeholder env.** This plan's placeholder env is `.env.ci`. Storybook's is `.storybook/env/.env`. Whichever lands second may point at the other's file instead.
-- **`CoreProviders`.** Once the Storybook `CoreProviders` exists, its decorator also mounts `<ModalHost />`, as that spec says.

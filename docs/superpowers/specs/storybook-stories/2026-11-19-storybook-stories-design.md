@@ -93,7 +93,7 @@ The scan found 580 component files and left out about 336:
 - **About 190 private sub-pieces,** each imported by one file in its own folder. Their parent's stories cover them.
 - **50 screens.**
 - **48 unreachable files.** These include 40 parked landing variants. They also include 7 orphaned files, which each get a dead-code ticket: six in `spinquest-cards` and `responsible-gaming/components/policy`.
-- **About 48 others:** non-visual files, mobile and desktop variants, skeletons and loaders, wrappers, icon sets, hooks, and the GeoComply hints dialog, which the modal manager spec deletes.
+- **About 48 others:** non-visual files, mobile and desktop variants, skeletons and loaders, wrappers, icon sets, hooks, and the GeoComply hints dialog, which has no live opener.
 
 New components are caught by the [story prompt hook](#story-prompt-hook), not by re-running the scan.
 
@@ -317,13 +317,6 @@ Run this whenever the work stops:
 - [ ] Every `!test` tag and every reported a11y violation has a ticket.
 - [ ] `pnpm lint` and `pnpm storybook:check` pass on `main`.
 - [ ] `docs/storybook.md` matches what exists.
-
-## Coordination with the modal manager
-
-The [modal manager spec](../unified-modal-manager/2026-11-16-unified-modal-manager-design.md) touches the same files in two places:
-
-- **CI.** Its CI `test` job leaves `.storybook/**` out until SB-00c decides. Any approved Storybook job goes in `storybook.yaml`, not in that job.
-- **Providers.** Once its `ModalHost` lands, the preview mounts it. The port that retires the dialog stack removes `DialogsProvider` from `CoreProviders`.
 
 ## Left to the builder
 
