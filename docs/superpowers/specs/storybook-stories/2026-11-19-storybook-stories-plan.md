@@ -15,9 +15,9 @@ That is SB-00a to SB-03.
 - **State.** Presets seed zustand stores, and `withFlags` replaces `posthog.getFeatureFlag`.
 - **Story tests.** `@storybook/addon-vitest` runs every story in headless Chromium, with a11y in report-only mode.
 - **To-do list.** `UNSTORIED` holds the spec's 244-file appendix, and a small test keeps it honest.
-- **Hosting.** Storybook is served from `main` as an nginx image.
+- **CI and hosting.** Nothing runs in CI or deploys until SB-00c's evaluation. If it approves, Storybook gets its own path-filtered workflow and an nginx image.
 
-**Tech Stack:** Storybook 10.x (react-vite), `storybook/test`, `@storybook/addon-vitest` with Vitest browser mode (Playwright Chromium), React 18, MUI 5, TanStack Query, zustand 4.5, axios, i18next, Vitest 3, GitHub Actions, Docker/nginx.
+**Tech Stack:** Storybook 10.x (react-vite), `storybook/test`, `@storybook/addon-vitest` with Vitest browser mode (Playwright Chromium), React 18, MUI 5, TanStack Query, zustand 4.5, axios, i18next, Vitest 3. GitHub Actions and Docker/nginx only if SB-00c approves them.
 
 **Spec:** [2026-11-19-storybook-stories-design.md](./2026-11-19-storybook-stories-design.md)
 
@@ -27,21 +27,23 @@ That is SB-00a to SB-03.
 
 - **Packages:**
   - Storybook 10.x, pinned exactly to what `storybook upgrade` resolves within the `pnpm-workspace.yaml` policies.
+  - `@storybook/addon-docs`, as a direct dependency.
   - `@storybook/addon-vitest` and the browser-mode provider its installer adds.
   - Nothing else, and never `msw`.
   - Play functions import from `storybook/test`.
 - **Env:**
   - Storybook reads only `.storybook/env/.env`, never the repo-root `.env`.
-  - Its values are `VITE_APP_PRODUCT=casino`, `VITE_APP_ENABLE_SERVER_FLAGS=false`, `VITE_APP_ENABLE_POSTHOG=false`, `VITE_APP_ENABLE_SENTRY=false` and `VITE_APP_USE_MERCH_MOCKS=false`, plus a dummy value for every other key `src/config/env.ts` requires.
+  - It sets `VITE_APP_PRODUCT=casino`, every `VITE_APP_ENABLE_*` flag to `false`, and `VITE_APP_USE_MERCH_MOCKS=false`, plus a dummy value for every other key `src/config/env.ts` requires.
 - **Scope:** the 244 files in the spec's appendix, grouped by batch. `UNSTORIED` (Task 8) holds the same list. New components are handled by the story prompt hook (Task 12).
 - **Story files:**
   - A story file sits beside its component and uses CSF3. `meta` sets `title` and `component`, and is the default export.
   - UI and Shared metas add `tags: ['autodocs']`.
   - Stories are typed `StoryObj<typeof Component>`.
   - Export names are state names: `Default`, `Loading`, `Error`, `Empty`, `Mobile320`, `German`, and variant names.
-  - Shared args go in meta `args`, and variants spread them. Use `render` only for what args can't express.
+  - Every story is driven by args, so Controls can change its inputs. Shared args go in meta `args`, and variants spread them. Use `render` only for what args can't express.
+  - A data-reading story exposes its key data values as args, and makes `parameters.api` a function of them.
   - A story that can't run in the test browser gets `tags: ['!test']`, with a comment giving the reason.
-- **Titles:** `UI/<Name>`, `Shared/<Name>`, `Shared/Layouts/<Name>` and `Features/<Feature>/<Name>`. Sidebar order is `['UI', 'Shared', 'Features', '*']`.
+- **Titles:** `UI/<Name>`, `Shared/<Name>` and `Features/<Feature>/<Name>`. Sidebar order is `['UI', 'Shared', 'Features', '*']`.
 - **Fixtures:**
   - No story reaches the network. A request without a fixture fails the story, naming its key.
   - No fixture returns a 401 or a gate code (MFA, geo).
@@ -92,7 +94,7 @@ That is SB-00a to SB-03.
 
 ---
 
-## PR SB-00a: upgrade and start
+## PR SB-00a: set up Storybook
 
 Branch: `chore/storybook-sb-00a`, from `main`. This PR fixes [SQ-1154](https://linear.app/social-gaming-room/issue/SQ-1154/bugfix-get-storybook-in-spinquest-frontend-rendering-stories-again). Link the issue in the PR.
 
@@ -170,14 +172,14 @@ Branch: `chore/storybook-sb-00a`, from `main`. This PR fixes [SQ-1154](https://l
   - If that takes more than about 2 hours, stop and report the error count and the kinds of errors.
 - [ ] **Step 3: Write `main.ts`.**
   - The first line is `process.env.VITE_APP_PRODUCT ??= 'casino';`.
-  - `stories: ['../src/**/*.stories.@(ts|tsx)', './checks/*.stories.tsx']`.
+  - `stories: ['../src/**/*.stories.@(ts|tsx)']`. Task 6 adds the check-story glob.
   - `addons: ['@storybook/addon-docs', '@storybook/addon-a11y']`. Task 7 adds `@storybook/addon-vitest`.
   - `framework: { name: '@storybook/react-vite', options: {} }`.
   - `staticDirs: ['../public']`.
   - `typescript: { reactDocgen: 'react-docgen' }`.
   - `viteFinal` sets `envDir` to the absolute path of `.storybook/env`.
 - [ ] **Step 4: Write `.storybook/env/.env`.**
-  - It holds every key `EnvSchema` requires, with placeholders such as `VITE_APP_API_URL=http://storybook.invalid`, plus the five values in Global Constraints.
+  - It holds every key `EnvSchema` requires, with placeholders such as `VITE_APP_API_URL=http://storybook.invalid`, plus the values in Global Constraints.
   - No real key may appear.
 - [ ] **Step 5: Write `preview.tsx`.**
   - `decorators: [withStoryProviders]`.
@@ -186,7 +188,7 @@ Branch: `chore/storybook-sb-00a`, from `main`. This PR fixes [SQ-1154](https://l
   - `parameters.viewport.options: STORY_VIEWPORTS`.
   - No `parameters.actions.argTypesRegex`, and no `app-provider` import.
 - [ ] **Step 6: Verify the stories render.**
-  - Run `pnpm storybook`, open each of the 7 existing stories in the browser pane, and check the console.
+  - Run `pnpm storybook`, open each of the 7 existing stories in a browser, and check the console.
   - Expect every story to render, and no `Invalid env provided` error. That error is the third SQ-1154 failure.
   - If it still appears, find out where Storybook's Vite config loses the env before changing anything else:
     - Log `config.envDir`, `config.envPrefix` and `config.define` from `viteFinal`.
@@ -214,7 +216,7 @@ Branch: `chore/storybook-sb-00a`, from `main`. This PR fixes [SQ-1154](https://l
 
 ---
 
-## PR SB-00b: data, checks and the to-do list
+## PR SB-00b: story tooling
 
 Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
 
@@ -232,8 +234,10 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
   - `export interface FixtureResponse { status?: number; data?: unknown; delay?: 'never' }`
   - `export const respond = (response: FixtureResponse): BrandedFixtureResponse`. The brand is a module-private symbol.
   - `export type ApiFixtures = Partial<Record<FixtureKey, unknown>>`
-  - `export const createFixtureAdapter = (fixtures: ApiFixtures): AxiosAdapter`
-  - `export const installFixtureAdapter = (fixtures: ApiFixtures): (() => void)`. It swaps `api.defaults.adapter` (`api` from `@/lib/api/api-client`) and returns the restore function.
+  - `export type ApiFixturesParameter = ApiFixtures | ((args: Record<string, unknown>) => ApiFixtures)`
+  - `export const resolveFixtures = (parameter: ApiFixturesParameter | undefined, args: Record<string, unknown>): ApiFixtures`
+  - `export const createFixtureAdapter = (getFixtures: () => ApiFixtures): AxiosAdapter`. It calls `getFixtures()` on every request, so the fixtures always follow the current args.
+  - `export const installFixtureAdapter = (getFixtures: () => ApiFixtures): (() => void)`. It swaps `api.defaults.adapter` (`api` from `@/lib/api/api-client`) and returns the restore function.
   - `export const takeFixtureMisses = (): string[]`. It returns the keys of unmatched requests since the last call, and clears them.
 - Key rule: a request's key is `METHOD + ' ' + pathname`. The pathname comes from `axios.getUri(config)`, with `baseURL` and the query string removed.
 
@@ -245,6 +249,12 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
   - `it('never settles for delay: "never"')`: race it against a 50 ms timer, and the timer wins.
   - `it('rejects an unmatched request and logs console.error naming "GET /users/me"')`
   - `it('records the miss for takeFixtureMisses and clears it after reading')`
+  - `it('answers from fixtures built from the current args')`: `getFixtures` returns a different body after the args change, and the next request gets it.
+
+  In `describe('resolveFixtures')`:
+  - `it('returns an object parameter as is')`
+  - `it('calls a function parameter with the args')`
+  - `it('returns an empty map when the parameter is missing')`
 
   In `describe('installFixtureAdapter')`:
   - `it('restores the original api adapter on cleanup')`
@@ -291,7 +301,9 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
 - [ ] **Step 3: Implement** the fixtures and the three modules.
 - [ ] **Step 4: Run** the same tests. Expect PASS.
 - [ ] **Step 5: Wire up the preview.**
-  - A preview-level `beforeEach(context)` calls `clearStorage()` and returns `installFixtureAdapter(context.parameters.api ?? {})`.
+  - A preview-level `beforeEach(context)` calls `clearStorage()` and returns `installFixtureAdapter(() => resolveFixtures(context.parameters.api, getCurrentStoryArgs()))`.
+  - `withStoryProviders` records the story's current args on every render (`setCurrentStoryArgs(context.args)`, a module-level ref in `.storybook/fixtures/current-args.ts`, exporting `getCurrentStoryArgs` and `setCurrentStoryArgs`).
+  - When `parameters.api` is a function, `withStoryProviders` creates the `QueryClient` keyed on the args (`useMemo` on `JSON.stringify(context.args)`), so changing a control refetches.
   - A preview-level `afterEach` throws ``new Error(`Requests with no fixture: ${misses.join(', ')}`)`` when `takeFixtureMisses()` is not empty.
 - [ ] **Step 6: Commit.** `feat(storybook): storage reset, signedIn/signedOut and withFlags presets`
 
@@ -302,7 +314,7 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
   - `.storybook/locale.ts`
   - `.storybook/checks/locale.stories.tsx`
 - Test: `.storybook/locale.test.ts`
-- Modify: `.storybook/preview.tsx`
+- Modify: `.storybook/preview.tsx` and `.storybook/main.ts`
 
 **Interfaces:**
 - Produces:
@@ -320,7 +332,7 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
   - Add `globalTypes.locale = { description: 'Language', toolbar: { title: 'Language', icon: 'globe', items: LOCALE_TOOLBAR_ITEMS, dynamicTitle: true } }`.
   - Add `initialGlobals: { locale: DEFAULT_LOCALE }`.
   - Prepend `withLocale` to `decorators`.
-- [ ] **Step 4: Add the check story.** `.storybook/checks/locale.stories.tsx` is tagged `['!dev', '!autodocs']`, so it only runs in tests.
+- [ ] **Step 4: Add the check story.** `.storybook/checks/locale.stories.tsx` is tagged `['!dev', '!autodocs']`, so it only runs in tests. Add `'./checks/*.stories.tsx'` to `stories` in `main.ts`.
   - It renders `t('<key>')` for one key present in both `en.json` and `de.json`.
   - Its `German` story sets `globals: { locale: 'de' }`, and its `play` asserts the German string. That also proves `/locales` loads in the test browser.
 - [ ] **Step 5: Run** the tests and `pnpm storybook:build`. Expect PASS.
@@ -353,10 +365,11 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
   - Give an existing story an image with no `alt`.
   - Run `pnpm test:storybook`. Expect PASS, with the violation reported.
   - Revert.
-- [ ] **Step 5: Check docs-page isolation by hand.**
-  - In `pnpm storybook`, put two stories with different `parameters.api` on one docs page.
-  - Confirm each shows its own data, and record the result in the PR body.
-- [ ] **Step 6: Run** `pnpm test:storybook`, `pnpm test`, `pnpm lint` and `pnpm typecheck`. Expect PASS.
+- [ ] **Step 5: Check docs-page isolation and live data controls by hand.**
+  - In `pnpm storybook`, put two stories with different `parameters.api` on one docs page. Confirm each shows its own data.
+  - On a story whose `parameters.api` is a function of its args, change the data control. Confirm the story refetches and shows the new value.
+  - Record both results in the PR body.
+- [ ] **Step 6: Run** `pnpm lint`, `pnpm test` and `pnpm storybook:check`. Expect PASS.
 - [ ] **Step 7: Commit.** `test(storybook): run every story in Chromium with the Vitest addon`
 
 ### Task 8: The to-do list
@@ -384,16 +397,44 @@ Branch: `chore/storybook-sb-00b`, from `main` after SB-00a merges.
   - Revert both.
 - [ ] **Step 5: File a dead-code ticket** for each of the 7 orphaned files the spec names.
 - [ ] **Step 6: Commit.** `test(storybook): to-do list of components without stories`
-### Task 9: Developer docs
 
-**Files:** Rewrite `docs/storybook.md`.
+### Task 9: Example story and developer docs
 
-- [ ] **Step 1: Rewrite the doc.** Describe the setup as built, with a short example for each topic in the spec's [Developer docs](./2026-11-19-storybook-stories-design.md#developer-docs) section. That includes:
-  - scope and the to-do list
-  - the rule that a new in-scope component ships with a story or a line in `UNSTORIED`
+**Files:**
+- Create: `.storybook/examples/reward-claim-card.tsx` and `.storybook/examples/reward-claim-card.stories.tsx`
+- Modify: `.storybook/main.ts`
+- Rewrite: `docs/storybook.md`
 
-  Link the spec.
-- [ ] **Step 2: Commit.** `docs(storybook): document the story setup`
+- [ ] **Step 1: Write the example.**
+  - Create `.storybook/examples/reward-claim-card.tsx`, a teaching-only component:
+    - It reads `GET /storybook-example/reward` with `useQuery`.
+    - It shows the amount, and has a Claim button that POSTs `/storybook-example/reward/claim` with `useMutation` and is disabled while pending.
+    - It has an error state with Retry, and an empty state.
+    - Its text uses existing keys present in both `en.json` and `de.json`.
+  - Create `reward-claim-card.stories.tsx`, tagged `['!dev']`, with `title: 'Examples/RewardClaimCard'`. Its stories come in this order:
+    1. imports
+    2. fixtures
+    3. meta, with `argTypes` for one prop control (`compact`) and two data controls (`rewardAmount` and `rewardStatus`), where `parameters.api` is a function of those args
+    4. `Default`
+    5. `Compact`
+    6. `Loading`, `Error` (with a play that clicks Retry and asserts a refetch) and `Empty`
+    7. `Mobile320` and `German`
+    8. `Claim`, with a play that asserts a `fn()` spy and the disabled button while the POST is `respond({ delay: 'never' })`
+  - Add `'./examples/*.stories.tsx'` to `stories` in `main.ts`.
+  - Run `pnpm test:storybook`. Expect PASS.
+- [ ] **Step 2: Rewrite the doc.** Write the "Anatomy of a story" section. It walks through the example in its order, maps each story to its checklist row, and ends with a don't list: no real network calls, no 401s or gate codes, no mocking away the component's own logic, and no literal copy in components. Write it precisely enough for Claude to follow when generating a story.
+- [ ] **Step 3: Describe the rest of the setup,** with a short example for each of these:
+  - tiers, titles and the story checklist
+  - `CoreProviders` and `parameters.router`
+  - `parameters.api` and `respond()`
+  - `signedIn`, `signedOut` and `withFlags`
+  - the language dropdown and viewports
+  - play functions and the `!test` tag
+  - `pnpm test:storybook` and `pnpm storybook:check`
+  - the to-do list, and that a new in-scope component ships with a story or a line in `UNSTORIED`
+
+  Remove the CI and deployment claims, and link the spec.
+- [ ] **Step 4: Commit.** `docs(storybook): anatomy of a story and the story setup`
 
 ---
 
@@ -421,6 +462,7 @@ Branch: `chore/storybook-sb-00c`, from `main` after SB-00b merges, and best afte
 
   Put the measurements in the PR body.
 - [ ] **Step 5: Commit** in the workspace repo. `docs(specs): record the Storybook CI decision`
+
 ### Task 11: Wire what was approved
 
 Do this task only for what Task 10 approved. Skip whatever it didn't.

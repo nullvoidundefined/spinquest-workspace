@@ -115,10 +115,36 @@ The preview sets `storySort.order` to `['UI', 'Shared', 'Features', '*']`.
   - UI and Shared metas add `tags: ['autodocs']`.
   - Stories are typed `StoryObj<typeof Component>`.
 - **Names.** Export names are the state names: `Default`, `Loading`, `Error`, `Empty`, `Mobile320`, `German`, and variant names.
-- **Args.** Shared args go in meta `args`, and variants spread them. `render` is only for what args can't express.
+- **Interactive.** Every story is driven by args, so the Controls panel can change its inputs.
+  - Props are args. Shared args go in meta `args`, and variants spread them. `render` is only for what args can't express.
+  - A data-reading story also exposes its key data values as args, such as amounts, counts, statuses and error codes. Its `parameters.api` is then a function of those args, so changing a control refetches with the new values.
 - **Skipping tests.** A story that can't run in the test browser gets `tags: ['!test']`, with a comment giving the reason.
 - **Fixtures.** Shared fixtures go in `src/fixtures/<domain>`, typed with the real response types.
 - **Strings.** A component's text comes through i18n. Story-only labels may be literal.
+
+### Anatomy of a story
+
+`docs/storybook.md` has an "Anatomy of a story" section, written precisely enough for Claude to follow when it generates a story.
+
+- **It walks through a real example:** `.storybook/examples/reward-claim-card.tsx`, a small teaching component, and its `reward-claim-card.stories.tsx`.
+  - The stories file is tagged `!dev`, so it stays out of the sidebar, but it runs in the story tests. If an API drifts, typecheck or a test fails.
+  - The component reads `GET /storybook-example/reward`, has a Claim button that POSTs, and has an error state with Retry and an empty state.
+  - Its text uses keys that already exist in `en.json` and `de.json`.
+- **The stories come in a fixed order:**
+  1. imports
+  2. fixtures
+  3. meta, with `argTypes` for the prop controls and the data controls
+  4. `Default`
+  5. a prop variant
+  6. `Loading`, `Error` (with a Retry play) and `Empty`
+  7. `Mobile320` and `German`
+  8. `Claim`, with a play function
+- **The doc section follows the same order,** mapping each story to its checklist row.
+- **It ends with a short don't list:**
+  - no real network calls
+  - no 401s or gate codes
+  - no mocking away the component's own logic
+  - no literal copy in components
 
 ### Story checklist
 
@@ -158,7 +184,7 @@ Storybook never reads the repo-root `.env`, which holds real keys.
 
 - **Placeholder env file.** `main.ts` points Vite's `envDir` at a committed `.storybook/env/.env`. It holds:
   - `VITE_APP_PRODUCT=casino`
-  - every `ENABLE_*` flag set to `false`
+  - every `ENABLE_*` flag, and `USE_MERCH_MOCKS`, set to `false`
   - a dummy value for every other required key
 - **Product alias.** `vite.config.ts` reads `process.env.VITE_APP_PRODUCT` for the product alias, so `main.ts` starts with `process.env.VITE_APP_PRODUCT ??= 'casino'`.
 - **Casino build.** Storybook builds as casino. The `spinquest-cards` stories say so in their docs description.
@@ -166,6 +192,7 @@ Storybook never reads the repo-root `.env`, which holds real keys.
 ### Fixtures, sign-in and flags
 
 - **Fixture adapter.** The preview's global `beforeEach` swaps `api.defaults.adapter` for one that answers from `parameters.api`, and restores it afterwards.
+  - **Live data controls.** `parameters.api` is either an object or a function of the story's args. The adapter builds the fixtures from the current args each time a request is made. When the args change, the story decorator gives the story a fresh `QueryClient`, so it refetches.
   - **Keys** are `'METHOD /path'`, ignoring the query string.
   - **A plain value** is a 200 response body.
   - **`respond({ status, data, delay: 'never' })`** sets a status or a body. With `delay: 'never'`, the request never settles, which is how `Loading` stories work. The wrapper is branded, so a body with its own `status` field, such as a redemption, is never mistaken for it.
@@ -193,7 +220,7 @@ Storybook never reads the repo-root `.env`, which holds real keys.
 
 ### The to-do list
 
-- **The list.** `.storybook/unstoried.ts` exports `UNSTORIED`: the [appendix](#appendix-the-244-components) as a list of paths, grouped by batch ID. Each batch deletes its own entries.
+- **The list.** `.storybook/unstoried.ts` exports `UNSTORIED`: the [appendix](#appendix-the-244-components) as a list of paths, grouped by batch ID. It leaves out the 7 files that already have bare stories, which SB-01a and SB-01b bring up to the checklist. Each batch deletes its own entries.
 - **The test.** `.storybook/unstoried.test.ts` checks two things: every listed path exists, and none of them has a story yet. That keeps the list honest.
 - **Done.** The rollout is done when the list is empty.
 
