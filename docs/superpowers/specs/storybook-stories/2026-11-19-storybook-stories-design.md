@@ -48,8 +48,9 @@ Nothing Storybook-related runs in CI or deploys until the evaluation approves it
 
 ## Constraints
 
-- **Storybook 10.x.** The upgrade from 8.6 is approved. It is pinned to the version the official `storybook upgrade` resolves within the `pnpm-workspace.yaml` policies.
-  - **Added:** `@storybook/addon-docs`, which is a separate package on 10.x, and `@storybook/addon-vitest`, with the browser-mode provider its installer adds.
+- **Storybook 10.x.** The upgrade from 8.6 is approved. It is pinned to 10.6.2, because `@storybook/addon-vitest` 10.6.3 and later need Vitest 4 and the repo is on Vitest 3.
+  - **Added:** `@storybook/addon-docs`, which is a separate package on 10.x, and `@storybook/addon-vitest`, with `@vitest/browser` and `playwright` for browser mode.
+  - **Vitest 3.2.7.** `@vitest/browser` below 3.2.7 has a critical advisory, and it needs the matching `vitest`.
   - **Removed:** `addon-essentials`, `addon-actions`, `addon-links` and `node-logger`. Core covers them.
   - **Interaction API.** It comes from `storybook/test` in core.
   - **Package approval.** The approval above covers the Storybook upgrade only. `@storybook/addon-vitest` pulls in more packages (the browser-mode provider, Playwright and a Chromium download, and possibly a Vitest upgrade). Under workspace invariant 10, SB-00a and SB-00b each stop before installing anything new and present the exact package list, with license, maintenance and size, for administrator approval.
@@ -213,39 +214,37 @@ Storybook never reads the repo-root `.env`, which holds real keys.
 
 ### Story tests
 
-- **The Vitest addon.** `@storybook/addon-vitest` adds a `storybook` Vitest project.
+- **The Vitest addon.** `@storybook/addon-vitest` runs from its own `vitest.storybook.config.ts`.
   - `pnpm test:storybook` renders every story tagged `test` in headless Chromium, and runs its `play` function.
-  - The existing unit tests become the `unit` project, and `pnpm test` keeps running only them.
+  - `pnpm test`, bare `vitest` and editor test runs keep using `vite.config.ts`, so they never start a browser.
 - **Accessibility is report-only.** `parameters.a11y.test` is `'todo'`.
-- **The local check.** `pnpm storybook:check` runs typecheck, `storybook build --test`, the story tests and the `.storybook` unit tests. Every Storybook PR pastes its output in the PR body.
+- **The local check.** `pnpm storybook:check` runs typecheck, `storybook build --test`, the story tests and the `.storybook` unit tests. The unit tests read the placeholder env, so the check passes without a local `.env`. Every Storybook PR pastes its output in the PR body.
 
 ### The to-do list
 
 - **The list.** `.storybook/unstoried.ts` exports `UNSTORIED`: the [appendix](#appendix-the-244-components) as a list of paths, grouped by batch ID. It leaves out the 7 files that already have bare stories, which SB-01a and SB-01b bring up to the checklist. Each batch deletes its own entries.
-- **The test.** `.storybook/unstoried.test.ts` checks two things: every listed path exists, and none of them has a story yet. That keeps the list honest.
+- **The test.** `.storybook/unstoried.test.ts` checks that every listed path exists, that none of them has a story yet, and that no path is listed twice. That keeps the list honest.
 - **Done.** The rollout is done when the list is empty.
 
 ### CI and deploys
 
-No Storybook step goes into any CI or deploy workflow until SB-00c has measured what it would cost.
+SB-00c measured the cost at the pilot's start, with 29 stories, on 2026-11-20.
 
-- **What SB-00c measures,** locally:
-  - the time for `storybook build --test`, the Chromium download and `pnpm test:storybook`, at the pilot's story count, projected to the full rollout
-  - the same against the duration of the `build` job
-- **What it decides,** recorded in this spec:
-  - whether PRs get a Storybook check
-  - whether Storybook is hosted
-- **Where approved jobs go.** They go in a separate `.github/workflows/storybook.yaml`, with path filters (`src/**`, `public/locales/**`, `.storybook/**`, `package.json` and `pnpm-lock.yaml`). Never `build.yaml` or the deploy workflows.
-- **Hosting, if approved:**
-  - An nginx image built from `main`, using the app's base image and `default.conf`, is pushed to `ghcr.io/<org>/spinquest-frontend-storybook`.
-  - A DevOps ticket covers the Argo app and a non-public dev URL.
-  - The image is only built in CI, from the placeholder env.
+| Step | Local | CI estimate (about twice local) | CI estimate at about 1,000 stories |
+|---|---|---|---|
+| `storybook build --test` | 3.9 s | about 8 s | 1 to 2 min |
+| `pnpm test:storybook` | 5.0 s | about 10 s | about 6 min |
+| Chromium download | 9.9 s cold | 30 to 60 s with `--with-deps` | same |
+
+The `build` job's median on PRs was 159 s (p90 192 s, 40 runs).
+
+- **PR check: yes, informational.** `.github/workflows/storybook.yaml` runs `pnpm storybook:check` on PRs that touch `src/**`, `public/locales/**`, `.storybook/**`, the package and lock files, `tsconfig.json`, `vite.config.ts` or `vitest.storybook.config.ts`. It is not a required check, so it never blocks a merge, and it is separate from `build.yaml` and the deploy workflows, so it never slows them.
+- **Hosting: decided after the pilot.** If approved then, an nginx image built from `main` with the app's base image and `default.conf` is pushed to `ghcr.io/<org>/spinquest-frontend-storybook`, built only in CI from the placeholder env, and a DevOps ticket covers the Argo app and a non-public dev URL.
 
 ### Story prompt hook
 
 When Claude creates a new component in spinquest-frontend, it asks whether to generate a story.
 
-- **Where it lives.** `.claude/hooks/story-prompt.sh` in the workspace repo, wired under `PostToolUse` like `style-scan.sh`, with fixtures for `test-hooks.sh`.
 - **When it fires.** All of these must hold:
   - A `Write` created the file: the tool response's type is `create`.
   - The file is a `.tsx` under `src/components` or `src/features`.
@@ -255,7 +254,7 @@ When Claude creates a new component in spinquest-frontend, it asks whether to ge
   - **Yes:** Claude writes the story, following `docs/storybook.md`.
   - **No:** Claude adds the file to `UNSTORIED`.
   - **Private sub-piece or screen:** Claude says no story is needed.
-- **Who gets it.** SB-00d first checks that workspace hooks load in a session started inside `spinquest-frontend`. If they don't, the hook ships in the team's `claude-skills` plugin instead.
+- **Status: deferred until after the pilot.** Workspace hooks don't load in a session started inside `spinquest-frontend`, so the hook would have to ship in the team's `claude-skills` plugin to reach everyone.
 
 ## Delivery plan
 
